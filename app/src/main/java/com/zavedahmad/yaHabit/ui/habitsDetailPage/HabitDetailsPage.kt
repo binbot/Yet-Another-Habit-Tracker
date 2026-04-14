@@ -261,6 +261,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                             )
                                         }
                                     },
+                                    habitEntity = habit,
 
                                     )
                             }
@@ -334,6 +335,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                     interactive = false,
                                     skipHabit = { },
                                     unSkipHabit = {},
+                                    habitEntity = habit,
                                     dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate -> },
                                 )
                             }
@@ -341,13 +343,13 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
-                            FrequencyChart(habitAllData)
+                            FrequencyChart(habitAllData, habit)
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
 
 
-                            PieChartDetail(habitAllData)
+                            PieChartDetail(habitAllData, habit)
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
@@ -363,7 +365,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             }
                             Spacer(Modifier.height(10.dp))
 
-                            StreakChartWidget(habitAllData)
+                            StreakChartWidget(habitAllData, habit)
                             Spacer(Modifier.height(40.dp))
 
 //                            Spacer(Modifier.height(100.dp))

@@ -22,7 +22,7 @@ import java.time.LocalDate
 @Composable
 fun WeekCalendarDataNew(
 
-    markHabitDoneForADate: (date: LocalDate) -> Unit,
+    incrementHabit: (date: LocalDate) -> Unit,
     deleteRepetitionsForDate: (date: LocalDate) -> Unit,
     initialWeekString: String? = null,
     habitEntity: HabitEntity,
@@ -112,13 +112,13 @@ fun WeekCalendarDataNew(
                     repetitionsOnThisDay = if (dayState != "error" && datesMatching.size > 0) {
                         datesMatching[0].repetitionsOnThisDay
                     } else {
-                        1.0
+                        0.0
                     }, unSkipHabit = { unSkipHabit(day.date) },
                     date = day.date,
                     state = dayState,
                     skipHabit = { skipHabitForDate(day.date) },
-                    addHabit = {
-                        markHabitDoneForADate(day.date)
+                    incrementHabit = {
+                        incrementHabit(day.date)
                     },
                     deleteHabit = {
                         deleteRepetitionsForDate(day.date)

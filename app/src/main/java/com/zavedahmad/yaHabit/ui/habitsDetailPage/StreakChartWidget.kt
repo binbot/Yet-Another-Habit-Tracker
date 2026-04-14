@@ -19,13 +19,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?) {
+fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     if (habitAllData != null) {
-        val sortedData = habitAllData.sortedBy { it.completionDate }
+        val completedData = habitAllData.filter { it.isPartial() || it.isSkip() || it.repetitionsOnThisDay >= habitEntity.repetitionPerDay }
+        val sortedData = completedData.sortedBy { it.completionDate }
         val streaks = mutableListOf<Triple<LocalDate, LocalDate, Int>>()
         var i = 0
 

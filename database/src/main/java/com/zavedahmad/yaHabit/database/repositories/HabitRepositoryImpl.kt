@@ -18,7 +18,6 @@ import com.zavedahmad.yaHabit.database.utils.findHabitClusters
 import com.zavedahmad.yaHabit.database.utils.processDateTriples
 import com.zavedahmad.yahabit.common.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 
 import kotlin.random.Random
@@ -105,12 +104,10 @@ class HabitRepositoryImpl(
 
     override suspend fun move(fromIndex: Int, toIndex: Int) {
         val entity = habitDao.getHabitByIndex(fromIndex)
-        db.runInTransaction {
-            runBlocking {
+        db.withTransaction {
                 habitDao.pluck(entity.index)
                 habitDao.vacant(toIndex)
                 habitDao.changeIndex(toIndex, entity.id)
-            }
         }
     }
 
@@ -134,27 +131,23 @@ class HabitRepositoryImpl(
         return id
     }
 
-    override fun editItem(habitEntity: HabitEntity) {
-        db.runInTransaction {
-            runBlocking {
-                habitDao.addHabit(habitEntity)
-                repairPartials(habitEntity)
-            }
+    override suspend fun editItem(habitEntity: HabitEntity) {
+        db.withTransaction {
+            habitDao.addHabit(habitEntity)
+            repairPartials(habitEntity)
         }
+        widgetUpdater.updateWidgets()
     }
 
-    override fun deleteHabit(id: Int) { // this deletes with index check
-        db.runInTransaction {
-            runBlocking {
-                val habitEntity = getHabitDetailsById(id)
-                // first pluck from this place
-                habitDao.pluck(habitEntity.index)
-                // then delete the habit
-                habitDao.deleteHabitById(id)
-                widgetUpdater.updateWidgets()
-            }
-
+    override suspend fun deleteHabit(id: Int) { // this deletes with index check
+        db.withTransaction {
+            val habitEntity = getHabitDetailsById(id)
+            // first pluck from this place
+            habitDao.pluck(habitEntity.index)
+            // then delete the habit
+            habitDao.deleteHabitById(id)
         }
+        widgetUpdater.updateWidgets()
 
     }
 
@@ -165,6 +158,20 @@ class HabitRepositoryImpl(
 
     override suspend fun getHabitDetailsById(id: Int): HabitEntity {
         return habitDao.getHabitById(id)
+    }
+
+    override suspend fun incrementRepetitions(date: LocalDate, habitId: Int) {
+        val entry = habitCompletionDao.getEntryOfCertainHabitIdAndDate(habitId, date)
+        val newValue = (entry?.repetitionsOnThisDay ?: 0.0) + 1.0
+        applyRepetitionForADate(date, habitId, newValue)
+    }
+
+    override suspend fun decrementRepetitions(date: LocalDate, habitId: Int) {
+        val entry = habitCompletionDao.getEntryOfCertainHabitIdAndDate(habitId, date)
+        val newValue = (entry?.repetitionsOnThisDay ?: 0.0) - 1.0
+        if (newValue >= 0.0) {
+            applyRepetitionForADate(date, habitId, newValue)
+        }
     }
 
 

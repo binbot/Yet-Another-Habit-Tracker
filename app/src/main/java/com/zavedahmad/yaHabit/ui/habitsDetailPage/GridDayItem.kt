@@ -31,7 +31,7 @@ import kotlin.collections.List
 @Composable
 fun GridDayItem(
     state: String = "error",
-    addHabit: () -> Unit = {},
+    incrementHabit: () -> Unit = {},
     date: LocalDate,
     deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
@@ -56,6 +56,13 @@ fun GridDayItem(
 
         }
 
+        "absoluteMore", "absoluteLess" -> {
+            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.7f)
+            textColor = MaterialTheme.colorScheme.primary
+            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
+            noteIndicatorColor = MaterialTheme.colorScheme.primary
+        }
+
         "absoluteDisabled" -> {
 
 
@@ -69,9 +76,9 @@ fun GridDayItem(
         "partial" -> {
             buttonAction = listOf(addHabit, { isDialogVisible.value = true })
 
-            bgColor = MaterialTheme.colorScheme.primary.copy(0.5f)
-            textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
-            noteIndicatorColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
+            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
+            textColor = MaterialTheme.colorScheme.primary
+            noteIndicatorColor = MaterialTheme.colorScheme.primary
 
 
         }
@@ -105,9 +112,9 @@ fun GridDayItem(
 
         "skip" -> {
             buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.tertiary
-            textColor = MaterialTheme.colorScheme.onTertiary
-            noteIndicatorColor = MaterialTheme.colorScheme.onTertiary
+            bgColor = MaterialTheme.colorScheme.tertiaryContainer
+            textColor = MaterialTheme.colorScheme.onTertiaryContainer
+            noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
 
         }
         else -> {

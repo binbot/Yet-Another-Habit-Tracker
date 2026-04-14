@@ -10,14 +10,16 @@ interface HabitRepository {
     suspend fun deleteAllHabits()
     suspend fun move(fromIndex: Int, toIndex: Int)
     suspend fun addHabitItem(habitEntity: HabitEntity) : Long
-    fun editItem(habitEntity: HabitEntity)
-    fun deleteHabit(id: Int)
+    suspend fun editItem(habitEntity: HabitEntity)
+    suspend fun deleteHabit(id: Int)
     fun getHabitsFlowSortedByIndex(): Flow<List<HabitEntity>>
     suspend fun archive(id: Int)
     suspend fun unArchive(id: Int)
 
     suspend fun getHabitDetailsById(id: Int): HabitEntity
     suspend fun decreaseRepetitions(entryId: Int, newRepetitionValue: Double)
+    suspend fun incrementRepetitions(date: LocalDate, habitId: Int)
+    suspend fun decrementRepetitions(date: LocalDate, habitId: Int)
     suspend fun cleanUp(habitId: Int, startDate: LocalDate, endDate: LocalDate)
     suspend fun increaseRepetitions(entryId: Int, newRepetitionValue: Double)
     suspend fun applyRepetitionForADate(date: LocalDate, habitId: Int, newRepetitionValue: Double)

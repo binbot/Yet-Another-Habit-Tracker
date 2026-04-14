@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.isAbsolute
 import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
@@ -29,9 +30,9 @@ import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
-fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?) {
-    val numberOfPartials by remember(habitAllData) {  derivedStateOf{( habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0)}}
-    val numberOfAbsolute by remember(habitAllData) { derivedStateOf {  ( habitAllData?.filter { it.isAbsolute() }?.size ?: 0)}}
+fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
+    val numberOfPartials by remember(habitAllData) {  derivedStateOf{( habitAllData?.filter { (it.isPartial() || (it.isAbsolute() && it.repetitionsOnThisDay < habitEntity.repetitionPerDay)) && !it.isSkip() }?.size ?: 0)}}
+    val numberOfAbsolute by remember(habitAllData) { derivedStateOf {  ( habitAllData?.filter { it.isAbsolute() && it.repetitionsOnThisDay >= habitEntity.repetitionPerDay }?.size ?: 0)}}
     val numberOfSkips by remember(habitAllData ){derivedStateOf { habitAllData?.filter { it.isSkip() }?.size ?: 0 }}
     val color1 = MaterialTheme.colorScheme.primary.copy(0.5f)
     val color2 = MaterialTheme.colorScheme.primary

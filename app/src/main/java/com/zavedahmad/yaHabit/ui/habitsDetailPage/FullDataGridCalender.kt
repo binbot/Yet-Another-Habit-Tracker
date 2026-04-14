@@ -23,6 +23,7 @@ import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapWeekHeaderPositio
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.state
 import java.time.DayOfWeek
@@ -31,7 +32,7 @@ import java.time.YearMonth
 
 @Composable
 fun FullDataGridCalender(
-    addHabit: (date: LocalDate) -> Unit = {},
+    incrementHabit: (date: LocalDate) -> Unit = {},
 
     deleteHabit: (date: LocalDate) -> Unit = {},
     initialMonthString: String? = null,
@@ -41,6 +42,7 @@ fun FullDataGridCalender(
     firstDayOfWeek: DayOfWeek,
     skipHabit: (date: LocalDate) -> Unit,
     unSkipHabit: (date: LocalDate) -> Unit,
+    habitEntity: HabitEntity? = null,
     dialogueComposable: @Composable (Boolean, () -> Unit, HabitCompletionEntity?, LocalDate) -> Unit
 ) {
     val currentMonth = remember { YearMonth.now() }
@@ -137,7 +139,15 @@ else{
                     hasNote = datesMatching[0].hasNote()
                     habitCompletionEntity = datesMatching[0]
                     suffix= if (day.date > dateToday){"Disabled"}else{""}
-                    dayState = habitCompletionEntity.state() + suffix
+                    dayState = habitCompletionEntity.state()
+                    if (dayState == "absolute" && habitEntity != null) {
+                        if (habitCompletionEntity.repetitionsOnThisDay < habitEntity.repetitionPerDay) {
+                            dayState = "absoluteLess"
+                        } else if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) {
+                            dayState = "absoluteMore"
+                        }
+                    }
+                    dayState += suffix
                 } else {
                     if (day.date > dateToday) {
                         dayState = "incompleteDisabled"
@@ -158,7 +168,7 @@ else{
                         Box(Modifier.padding((gridHeight / 80).dp)) {
                             GridDayItem(hasNote = hasNote,
                                 state = dayState,
-                                addHabit = { addHabit(day.date) },
+                                incrementHabit = { incrementHabit(day.date) },
                                 deleteHabit = { deleteHabit(day.date) },
                                 date = day.date,
                                 showDate = showDate,

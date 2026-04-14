@@ -48,7 +48,7 @@ fun DayItem(
     date: LocalDate,
     state: String,
     repetitionsOnThisDay: Double,
-    addHabit: () -> Unit = {},
+    incrementHabit: () -> Unit = {},
     deleteHabit: () -> Unit = {},
     skipHabit: () -> Unit,
     unSkipHabit: () -> Unit,
@@ -72,10 +72,10 @@ fun DayItem(
         { Toast.makeText(context, "Cannot modify future data", Toast.LENGTH_SHORT).show() }
     when (state) {
         "absoluteMore", "absoluteLess" -> {
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.primary
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
             textColor = MaterialTheme.colorScheme.primary
-            borderColor = MaterialTheme.colorScheme.primary
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
             icon = Icons.Default.Check
 //            iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
             iconComposable = {
@@ -96,8 +96,9 @@ fun DayItem(
         }
 
         "absoluteLessDisabled", "absoluteMoreDisabled" -> {
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.5f)
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.3f)
             textColor = MaterialTheme.colorScheme.onSurface.copy(0.5f)
+            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
 
 
 //            iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
@@ -119,9 +120,9 @@ fun DayItem(
         }
 
         "absolute" -> {
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.primary
-            textColor = MaterialTheme.colorScheme.primary
+            textColor = MaterialTheme.colorScheme.onPrimary
             borderColor = MaterialTheme.colorScheme.primary
             icon = Icons.Default.Check
             iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
@@ -130,10 +131,10 @@ fun DayItem(
 
 
         "partial" -> {
-            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
             textColor = MaterialTheme.colorScheme.primary
-            borderColor = MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.3f)
             iconComposable = {
                 Image(
                     painter = painterResource(R.drawable.hollowtick),
@@ -150,15 +151,15 @@ fun DayItem(
             textColor = MaterialTheme.colorScheme.onSurface.copy(0.5f)
             borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
             iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
-//            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
+//            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
 
         }
 
         "partialDisabled" -> {
             buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.inverseSurface.copy(0.4f)
-            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.3f)
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.2f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
             iconComposable = {
                 Image(
                     painter = painterResource(R.drawable.hollowtick),
@@ -187,27 +188,27 @@ fun DayItem(
         }
 
         "incomplete", "empty" -> {
-            borderColor = MaterialTheme.colorScheme.primary
-            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.onSurfaceVariant
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.surfaceVariant
             textColor = MaterialTheme.colorScheme.onSurfaceVariant
             iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
 
         }
 
         "note" -> {
-            borderColor = MaterialTheme.colorScheme.primary
-            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
+            borderColor = MaterialTheme.colorScheme.secondary
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.secondaryContainer
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
+            textColor = MaterialTheme.colorScheme.onSecondaryContainer
             iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
         }
 
         "skip" -> {
-            borderColor = MaterialTheme.colorScheme.primary
+            borderColor = MaterialTheme.colorScheme.tertiary
             buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.secondaryContainer
-            textColor = MaterialTheme.colorScheme.tertiary
+            bgColor = MaterialTheme.colorScheme.tertiaryContainer
+            textColor = MaterialTheme.colorScheme.onTertiaryContainer
             iconComposable = { Icon(Icons.Default.DoubleArrow, "", tint = textColor) }
         }
 
@@ -221,6 +222,8 @@ fun DayItem(
     ) {
         Box(
             Modifier.clip(   shape = RoundedCornerShape(10.dp),)
+                .background(bgColor)
+                .border(width = LocalOutlineSizes.current.small, color = borderColor, shape = RoundedCornerShape(10.dp))
 
 
 

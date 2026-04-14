@@ -248,15 +248,14 @@ fun HabitItemReorderableNew(
                 Column(Modifier.Companion.fillMaxWidth()) {
 
                     WeekCalendarDataNew(
-                        markHabitDoneForADate = { date ->
+                        incrementHabit = { date ->
 
                             coroutineScope.launch(
                                 Dispatchers.IO
                             ) {
-                                viewModel.habitRepository.applyRepetitionForADate(
+                                viewModel.habitRepository.incrementRepetitions(
                                     date = date,
-                                    habitId = habit.id,
-                                    newRepetitionValue = habit.repetitionPerDay
+                                    habitId = habit.id
                                 )
                             }
                         },
