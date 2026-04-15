@@ -3,6 +3,8 @@ package com.zavedahmad.yaHabit.ui.mainPage.habitItemReorderable
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.R
-
+import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import java.time.LocalDate
 
@@ -136,10 +138,17 @@ fun DayItem(
             textColor = MaterialTheme.colorScheme.primary
             borderColor = MaterialTheme.colorScheme.primary.copy(0.3f)
             iconComposable = {
-                Image(
-                    painter = painterResource(R.drawable.hollowtick),
-                    contentDescription = "hollow tick",
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary.copy(0.8f))
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -161,10 +170,17 @@ fun DayItem(
             textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
             borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
             iconComposable = {
-                Image(
-                    painter = painterResource(R.drawable.hollowtick),
-                    contentDescription = "hollow tick",
-                    colorFilter = ColorFilter.tint(textColor)
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -185,6 +201,27 @@ fun DayItem(
             textColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.7f)
             borderColor = MaterialTheme.colorScheme.secondaryContainer.copy(0.1f)
             iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
+        }
+
+        "failedDisabled" -> {
+            buttonAction = listOf(makeToast, makeToast)
+            bgColor = Color(0xFFF44336).copy(alpha = 0.1f)
+            textColor = Color(0xFFF44336).copy(alpha = 0.3f)
+            borderColor = Color(0xFFF44336).copy(alpha = 0.1f)
+            iconComposable = {
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         "incomplete", "empty" -> {
@@ -210,6 +247,27 @@ fun DayItem(
             bgColor = MaterialTheme.colorScheme.tertiaryContainer
             textColor = MaterialTheme.colorScheme.onTertiaryContainer
             iconComposable = { Icon(Icons.Default.DoubleArrow, "", tint = textColor) }
+        }
+
+        "failed" -> {
+            borderColor = Color(0xFFF44336)
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = Color(0xFFF44336).copy(alpha = 0.2f)
+            textColor = Color(0xFFF44336)
+            iconComposable = {
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
     }

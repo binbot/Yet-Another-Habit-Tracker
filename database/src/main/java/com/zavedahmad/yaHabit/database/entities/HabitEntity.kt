@@ -22,6 +22,21 @@ data class HabitEntity(
     @ColumnInfo(defaultValue = "Unit")
     val measurementUnit : String,
     @ColumnInfo(defaultValue = "0")
+    val isNegative : Boolean = false,
+    @ColumnInfo(defaultValue = "0")
     val isArchived : Boolean = false
 
     )
+
+    fun HabitEntity.isCompleted(completion: HabitCompletionEntity): Boolean {
+    if (completion.isSkip()) return true
+    if (completion.isPartial()) return true // This is for cluster auto-fill logic
+
+    return if (this.isNegative) {
+        // Negative habit (e.g., limit smoking) is "complete" (success) if logged <= target
+        completion.repetitionsOnThisDay <= this.repetitionPerDay
+    } else {
+        // Positive habit (e.g., drink water) is "complete" (success) if logged >= target
+        completion.repetitionsOnThisDay >= this.repetitionPerDay
+    }
+    }

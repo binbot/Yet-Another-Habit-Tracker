@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.isOnlyNote
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
@@ -59,18 +60,21 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
         }
     }
 
-    val barColor = MaterialTheme.colorScheme.primary
+    val successColor = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+    val failureColor = androidx.compose.ui.graphics.Color(0xFFF44336)
 
     val data by remember(habitAllData, yearToShow) {
         derivedStateOf {
 
                 allMonths.map { month ->
+                    val monthData = currentYearData.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() }
+                    val successCount = monthData.filter { habitEntity.isCompleted(it) }.size
+                    val failureCount = monthData.filter { !habitEntity.isCompleted(it) }.size
+
                     Bars(
                         label = month.month.name.slice(0..2), values = listOf(
-                            Bars.Data(
-                                value = currentYearData?.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() && it.repetitionsOnThisDay >= habitEntity.repetitionPerDay }?.size?.toDouble()
-                                    ?: 0.0, color = SolidColor(barColor)
-                            )
+                            Bars.Data(value = successCount.toDouble(), color = SolidColor(successColor)),
+                            Bars.Data(value = failureCount.toDouble(), color = SolidColor(failureColor))
                         )
                     )
                 }

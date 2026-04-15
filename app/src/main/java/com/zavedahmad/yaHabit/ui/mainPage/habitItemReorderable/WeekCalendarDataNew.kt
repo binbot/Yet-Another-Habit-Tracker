@@ -12,6 +12,7 @@ import com.kizitonwose.calendar.core.daysOfWeek
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
+import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.state
 
 import com.zavedahmad.yaHabit.ui.components.DaysOfWeekTitle
@@ -84,28 +85,29 @@ fun WeekCalendarDataNew(
                     } else {
                         ""
                     }
-                    dayState = habitCompletionEntity.state()
-                    if (dayState == "absolute"){
-                        if(datesMatching[0].repetitionsOnThisDay < habitEntity.repetitionPerDay){
-                            dayState = "absoluteLess"
-                        }else if (datesMatching[0].repetitionsOnThisDay > habitEntity.repetitionPerDay){
-                            dayState = "absoluteMore"
+
+                    val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
+
+                    if (habitEntity.isNegative) {
+                        dayState = if (isCompleted) "absolute" else "failed"
+                    } else {
+                        dayState = if (isCompleted) {
+                            if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                        } else {
+                            "partial"
                         }
                     }
-                    dayState += suffix
 
+                    dayState += suffix
                 } else {
                     if (day.date > dateToday) {
                         dayState = "incompleteDisabled"
                         suffix = "Disabled"
                     } else {
-                        dayState = "incomplete"
+                        dayState = if (habitEntity.isNegative) "absolute" else "incomplete"
                     }
 
                 }
-                val isDialogVisible = remember { mutableStateOf(false) }
-
-
 
                 DayItem(
                     hasNote = hasNote,
@@ -140,5 +142,3 @@ fun WeekCalendarDataNew(
         }, state = state)
     }
 }
-
-

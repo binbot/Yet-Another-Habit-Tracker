@@ -68,6 +68,9 @@ class AddHabitPageViewModel(
     private val _habitStreakType = MutableStateFlow<HabitStreakType>(HabitStreakType.DAILY)
     val habitStreakType = _habitStreakType.asStateFlow()
 
+    private val _isNegative = MutableStateFlow(false)
+    val isNegative = _isNegative.asStateFlow()
+
     private val _measurementUnit = MutableStateFlow<String?>(null)
     val measurementUnit = _measurementUnit.asStateFlow()
     private val _repetitionPerDay = MutableStateFlow<Double?>(null)
@@ -79,6 +82,10 @@ class AddHabitPageViewModel(
         collectThemeMode()
 
         getHabitDetails()
+    }
+
+    fun setIsNegative(value: Boolean) {
+        _isNegative.value = value
     }
 
     fun setRepetitionPerDay(repetition: Double) {
@@ -120,10 +127,11 @@ class AddHabitPageViewModel(
                 description = _habitDescription.value,
                 index = _existingHabitData.value?.index ?: 0,
                 streakType = _habitStreakType.value,
-                frequency = _habitFrequency.value ?: 2.0,
+                frequency = _habitFrequency.value ?: 1.0,
                 cycle = _habitCycle.value ?: 7,
                 measurementUnit = _measurementUnit.value ?: "Unit",
-                repetitionPerDay = _repetitionPerDay.value ?: 1.0
+                repetitionPerDay = _repetitionPerDay.value ?: 1.0,
+                isNegative = _isNegative.value
 
             )
             viewModelScope.launch(Dispatchers.IO) {
@@ -141,10 +149,11 @@ class AddHabitPageViewModel(
                         color = _selectedColor.value,
                         description = _habitDescription.value,
                         streakType = _habitStreakType.value,
-                        frequency = _habitFrequency.value ?: 2.0,
+                        frequency = _habitFrequency.value ?: 1.0,
                         cycle = _habitCycle.value ?: 7,
                         measurementUnit = _measurementUnit.value ?: "Unit",
-                        repetitionPerDay = _repetitionPerDay.value ?: 1.0
+                        repetitionPerDay = _repetitionPerDay.value ?: 1.0,
+                        isNegative = _isNegative.value
                     )
                 )
             }
@@ -169,6 +178,10 @@ class AddHabitPageViewModel(
 
     fun setHabitStreakType(streakType: HabitStreakType) {
         _habitStreakType.value = streakType
+        if (streakType == HabitStreakType.DAILY) {
+            _habitFrequency.value = 1.0
+            _habitCycle.value = 1
+        }
     }
 
     fun getHabitDetails() {
@@ -185,6 +198,7 @@ class AddHabitPageViewModel(
                     setHabitStreakType(existingHabitHolder.streakType)
                     setMeasurementUnit(existingHabitHolder.measurementUnit)
                     setRepetitionPerDay(existingHabitHolder.repetitionPerDay)
+                    setIsNegative(existingHabitHolder.isNegative)
                 }
             }
         }

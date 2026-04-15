@@ -23,38 +23,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isAbsolute
-import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
 fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    val numberOfPartials by remember(habitAllData) {  derivedStateOf{( habitAllData?.filter { (it.isPartial() || (it.isAbsolute() && it.repetitionsOnThisDay < habitEntity.repetitionPerDay)) && !it.isSkip() }?.size ?: 0)}}
-    val numberOfAbsolute by remember(habitAllData) { derivedStateOf {  ( habitAllData?.filter { it.isAbsolute() && it.repetitionsOnThisDay >= habitEntity.repetitionPerDay }?.size ?: 0)}}
-    val numberOfSkips by remember(habitAllData ){derivedStateOf { habitAllData?.filter { it.isSkip() }?.size ?: 0 }}
-    val color1 = MaterialTheme.colorScheme.primary.copy(0.5f)
-    val color2 = MaterialTheme.colorScheme.primary
-    val color3  = MaterialTheme.colorScheme.tertiary
+    val numberOfSuccess by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { habitEntity.isCompleted(it) && !it.isSkip() }?.size ?: 0) } }
+    val numberOfFailure by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { !habitEntity.isCompleted(it) && !it.isSkip() }?.size ?: 0) } }
+    val numberOfSkips by remember(habitAllData) { derivedStateOf { habitAllData?.filter { it.isSkip() }?.size ?: 0 } }
+
+    val colorSuccess = Color(0xFF4CAF50) // Green
+    val colorFailure = Color(0xFFF44336) // Red
+    val colorSkip = MaterialTheme.colorScheme.tertiary
+
     val data = remember(habitAllData) {
         mutableStateOf(
             listOf(
-                Pie(label = "Partial", data = numberOfPartials.toDouble(), color = color1 , selectedColor = Color.Green),
-                Pie(label = "Absolute", data = numberOfAbsolute.toDouble(), color =color2, selectedColor = Color.Blue),
-                Pie(label = "Skipped", data = numberOfSkips.toDouble(), color =color3, selectedColor = Color.Blue),
-
+                Pie(label = if (habitEntity.isNegative) "Failed" else "Complete", data = numberOfSuccess.toDouble(), color = colorSuccess, selectedColor = Color.Green),
+                Pie(label = if (habitEntity.isNegative) "Success" else "Partial", data = numberOfFailure.toDouble(), color = colorFailure, selectedColor = Color.Red),
+                Pie(label = "Skipped", data = numberOfSkips.toDouble(), color = colorSkip, selectedColor = Color.Blue),
             )
         )
     }
-    Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column {
-           Text("Absolute: $numberOfAbsolute" , color = color2)
-
-            Text("Partial: $numberOfPartials", color = color1)
-            Text("Skipped: $numberOfSkips", color = color3)
-
-
+            Text(if (habitEntity.isNegative) "Under Limit: $numberOfSuccess" else "Completed: $numberOfSuccess", color = colorSuccess)
+            Text(if (habitEntity.isNegative) "Over Limit: $numberOfFailure" else "Partial: $numberOfFailure", color = colorFailure)
+            Text("Skipped: $numberOfSkips", color = colorSkip)
         }
         Surface (Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)){
             Box(Modifier.padding(8.dp)){

@@ -25,73 +25,71 @@ import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
+import com.zavedahmad.yaHabit.database.entities.isCompleted
+
 @Composable
 fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     if (habitAllData != null) {
-        val completedData = habitAllData.filter { it.isPartial() || it.isSkip() || it.repetitionsOnThisDay >= habitEntity.repetitionPerDay }
-        val sortedData = completedData.sortedBy { it.completionDate }
-        val streaks = mutableListOf<Triple<LocalDate, LocalDate, Int>>()
-        var i = 0
+        val completedDates = habitAllData
+            .filter { habitEntity.isCompleted(it) }
+            .map { it.completionDate }
+            .distinct()
+            .sortedDescending()
 
-        while (i < sortedData.size - 1) {
-            val startDate = sortedData[i].completionDate
-            var streak = 1
-
-            while (i < sortedData.size - 1 && sortedData[i].completionDate.plusDays(1) == sortedData[i + 1].completionDate) {
-                i += 1
-                streak += 1
+        var currentStreak = 0
+        if (completedDates.isNotEmpty()) {
+            var checkDate = LocalDate.now()
+            // If today isn't logged, check yesterday to see if the streak is still 'active'
+            if (!completedDates.contains(checkDate)) {
+                checkDate = checkDate.minusDays(1)
             }
 
-            val endDate = sortedData[i].completionDate
-            if (streak > 1) {
-                streaks.add(Triple(startDate, endDate, streak))
-            } else {
-                i += 1
+            for (date in completedDates) {
+                if (completedDates.contains(checkDate)) {
+                    currentStreak++
+                    checkDate = checkDate.minusDays(1)
+                } else {
+                    break
+                }
             }
-
-
         }
-        streaks.sortByDescending { it.third }
-        val topThreeStreaks = streaks.take(5).toMutableList()
-//        topThreeStreaks.sortByDescending { it.first }
-        ShowStreaksBars(topThreeStreaks)
 
-    }
-}
+        // Calculate Best Streak
+        val sortedDates = completedDates.sorted()
+        var bestStreak = 0
+        var tempStreak = 0
+        var lastDate: LocalDate? = null
 
-@Composable
-private fun ShowStreaksBars(streaks: List<Triple<LocalDate, LocalDate, Int>>) {
-    val dateFormatter = DateTimeFormatter.ofPattern("d MMM, yy")
-    val textStyle = TextStyle(color = MaterialTheme.colorScheme.primary.copy(0.8f))
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        streaks.forEach { it ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-
-                Text(it.first.format(dateFormatter), style = textStyle)
-                Text(" - ")
-                Text(it.second.format(dateFormatter), style = textStyle)
-
-                Text(": " + it.third.toString())
+        for (date in sortedDates) {
+            if (lastDate != null && date == lastDate.plusDays(1)) {
+                tempStreak++
+            } else {
+                tempStreak = 1
             }
-            Column(
+            if (tempStreak > bestStreak) bestStreak = tempStreak
+            lastDate = date
+        }
 
-                Modifier
-                    .fillMaxWidth((it.third.toFloat() / streaks[0].third.toFloat()))
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(5.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                ) {}
+        Column(Modifier.fillMaxWidth().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.LocalFireDepartment, "Current Streak", tint = Color(0xFFFF9800))
+                Spacer(Modifier.width(8.dp))
+                Text("Current Streak: ", style = MaterialTheme.typography.titleMedium)
+                Text("$currentStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Stars, "Best Streak", tint = Color(0xFFFFD700))
+                Spacer(Modifier.width(8.dp))
+                Text("Best Streak: ", style = MaterialTheme.typography.titleMedium)
+                Text("$bestStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
         }
     }

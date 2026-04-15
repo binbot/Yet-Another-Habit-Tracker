@@ -124,7 +124,8 @@ class HabitRepositoryImpl(
                 frequency = habitEntity.frequency,
                 streakType = habitEntity.streakType,
                 measurementUnit = habitEntity.measurementUnit,
-                repetitionPerDay = habitEntity.repetitionPerDay
+                repetitionPerDay = habitEntity.repetitionPerDay,
+                isNegative = habitEntity.isNegative
             )
         )
         widgetUpdater.updateWidgets()

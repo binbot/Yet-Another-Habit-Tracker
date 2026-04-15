@@ -189,42 +189,14 @@ fun FrequencySelector(viewModel: AddHabitPageViewModel, onErrorValueChange: (Boo
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
             ) {
-                InvalidValueIndicator(visible = isErrorDaily.value)
-                OutlinedTextField(
-                    value = frequencyEveryDay.value,
-                    onValueChange = {
-                        val num = it.toDoubleOrNull()
-                        if (num != null) {
-                            if (num < upperLimit) {
-                                frequencyEveryDay.value = it
-                            }
-
-                        } else {
-                            frequencyEveryDay.value = ""
-
-                        }
-                    },
-                    keyboardOptions =
-                        KeyboardOptions(keyboardType = KeyboardType.Number),
-                    trailingIcon = {
-                        Text(
-                            measurementUnit ?: "Unit"
-                        )
-                    })
-
-                Text("Everyday")
+                Text("Every day", style = MaterialTheme.typography.bodyLarge)
             }
-            LaunchedEffect(frequencyEveryDay.value) {
-
-                val frequency = frequencyEveryDay.value.toDoubleOrNull()
-                if (frequency != null) {
-                    viewModel.setHabitFrequency(frequency)
-
-                }
-
-
+            LaunchedEffect(Unit) {
+                viewModel.setHabitFrequency(1.0)
+                viewModel.setHabitCycle(1)
+                viewModel.setHabitStreakType(HabitStreakType.DAILY)
             }
         }
     }

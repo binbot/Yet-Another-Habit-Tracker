@@ -174,6 +174,41 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                     HorizontalDivider()
                     Spacer(Modifier.height(20.dp))
 
+                    val isNegativeByViewModel by viewModel.isNegative.collectAsStateWithLifecycle()
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.FilterChip(
+                            modifier = Modifier.weight(1f),
+                            selected = !isNegativeByViewModel,
+                            onClick = { viewModel.setIsNegative(false) },
+                            label = { Text("Build Habit (+)", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF4CAF50).copy(0.2f),
+                                selectedLabelColor = Color(0xFF4CAF50)
+                            )
+                        )
+                        androidx.compose.material3.FilterChip(
+                            modifier = Modifier.weight(1f),
+                            selected = isNegativeByViewModel,
+                            onClick = { viewModel.setIsNegative(true) },
+                            label = { Text("Quit Habit (-)", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFF44336).copy(0.2f),
+                                selectedLabelColor = Color(0xFFF44336)
+                            )
+                        )
+                    }
+                    Text(
+                        if (isNegativeByViewModel) "Success = Staying UNDER your limit" else "Success = Meeting your goal",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(Modifier.height(20.dp))
+
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = name,
@@ -227,14 +262,14 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                         maxLines = 8
 
                     )
-                    Heading("Frequency")
+                    Heading("Target Days")
                     FrequencySelector(
                         viewModel,
                         onErrorValueChange = { it ->
                             frequencySelectorError.value = it
                         })
 
-                    Heading("Measurement Unit: Default = 'Unit'")
+                    Heading("Measurement Unit (e.g. Cups, Miles)")
                     TextField(
 
                         modifier = Modifier
@@ -243,7 +278,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                         value = measurementUnit ?: "",
                         placeholder = {
                             Text(
-                                "Unit",
+                                "Unit (Default is 'Unit')",
 
 
                                 )
@@ -266,7 +301,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
 
 
                     )
-                    Heading("Repetition Per Day")
+                    Heading("Daily Goal (Sessions/Units)")
                     RepetitionPerDaySelector(viewModel)
                     Heading("Color")
                     ColorSelector(viewModel)

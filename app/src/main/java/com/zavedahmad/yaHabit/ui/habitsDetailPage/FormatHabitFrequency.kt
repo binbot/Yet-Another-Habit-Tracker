@@ -10,14 +10,14 @@ fun formatHabitFrequency(streakType: HabitStreakType, frequency: Double, cycle: 
 
     return when (streakType) {
         HabitStreakType.DAILY  -> {
-            "$formattedNumber times EveryDay"
+             "Every day"
         }
         HabitStreakType.WEEKLY ->  {
-            "$formattedNumber times per Week"
+            if (frequency == 1.0) "Once per Week" else "$formattedNumber times per Week"
         }
 
         HabitStreakType.MONTHLY ->  {
-            "$formattedNumber times per Month"
+            if (frequency == 1.0) "Once per Month" else "$formattedNumber times per Month"
         }
         else -> {
             "$formattedNumber times per $cycle Days"

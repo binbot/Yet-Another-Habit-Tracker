@@ -74,7 +74,7 @@ fun GridDayItem(
 
 
         "partial" -> {
-            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
 
             bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
             textColor = MaterialTheme.colorScheme.primary
@@ -103,7 +103,7 @@ fun GridDayItem(
 
         "incomplete", "empty" -> {
             textColor = MaterialTheme.colorScheme.onSurfaceVariant
-            buttonAction = listOf(addHabit, { isDialogVisible.value = true })
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.surfaceVariant
             noteIndicatorColor = MaterialTheme.colorScheme.tertiary
 
@@ -116,6 +116,12 @@ fun GridDayItem(
             textColor = MaterialTheme.colorScheme.onTertiaryContainer
             noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
 
+        }
+        "failed" -> {
+            bgColor = Color(0xFFF44336)
+            textColor = Color.White
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            noteIndicatorColor = Color.White
         }
         else -> {
             bgColor = MaterialTheme.colorScheme.error

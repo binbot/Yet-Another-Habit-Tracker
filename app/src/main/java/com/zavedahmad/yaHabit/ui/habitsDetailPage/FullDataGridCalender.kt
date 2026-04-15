@@ -25,6 +25,7 @@ import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
+import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.state
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -139,21 +140,36 @@ else{
                     hasNote = datesMatching[0].hasNote()
                     habitCompletionEntity = datesMatching[0]
                     suffix= if (day.date > dateToday){"Disabled"}else{""}
-                    dayState = habitCompletionEntity.state()
-                    if (dayState == "absolute" && habitEntity != null) {
-                        if (habitCompletionEntity.repetitionsOnThisDay < habitEntity.repetitionPerDay) {
-                            dayState = "absoluteLess"
-                        } else if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) {
-                            dayState = "absoluteMore"
+                    
+                    val isCompleted = if (habitEntity != null) {
+                        habitEntity.isCompleted(habitCompletionEntity)
+                    } else {
+                        habitCompletionEntity.repetitionsOnThisDay > 0
+                    }
+
+                    if (habitEntity?.isNegative == true) {
+                        // Negative Habit: 
+                        // If stays under limit -> Absolute (Success)
+                        // If goes over limit -> Failed (Failure)
+                        dayState = if (isCompleted) "absolute" else "failed"
+                    } else {
+                        // Positive Habit:
+                        // If meets or exceeds goal -> Absolute (Success)
+                        // If some progress but not goal -> Partial (Partial)
+                        dayState = if (isCompleted) {
+                             if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                        } else {
+                             "partial"
                         }
                     }
+                    
                     dayState += suffix
                 } else {
                     if (day.date > dateToday) {
                         dayState = "incompleteDisabled"
                         suffix = "Disabled"
                     } else {
-                        dayState = "incomplete"
+                        dayState = if (habitEntity?.isNegative == true) "absolute" else "incomplete"
                     }
 
                 }

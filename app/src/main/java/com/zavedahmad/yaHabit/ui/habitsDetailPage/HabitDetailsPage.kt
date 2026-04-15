@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ButtonDefaults
@@ -71,6 +72,7 @@ import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
 import com.zavedahmad.yaHabit.ui.theme.CustomTheme
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
+import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -181,7 +183,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                     } else {
                                         350
                                     },
-                                    addHabit = { date ->
+                                    incrementHabit = { date ->
 
                                         coroutineScope.launch(
                                             Dispatchers.IO
@@ -286,6 +288,10 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                         habit.streakType, habit.frequency, habit.cycle
                                     )
                                 )
+                                Spacer(Modifier.width(20.dp))
+                                Icon(androidx.compose.material.icons.Icons.Default.Adjust, "")
+                                Spacer(Modifier.width(10.dp))
+                                Text("Goal: ${formatNumberToReadable(habit.repetitionPerDay)} ${habit.measurementUnit}")
                             }
                         }
                         Column(
@@ -306,7 +312,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             ) {
                                 FullDataGridCalender(
                                     habitData = habitAllData,
-                                    addHabit = { date ->
+                                    incrementHabit = { date ->
 
                                         coroutineScope.launch(
                                             Dispatchers.IO
