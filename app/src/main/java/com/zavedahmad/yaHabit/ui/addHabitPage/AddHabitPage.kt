@@ -226,7 +226,10 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
 
                         shape = RoundedCornerShape(50.dp),
                         isError = false,
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                        )
                     )
 
 
