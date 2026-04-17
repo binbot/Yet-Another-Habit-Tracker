@@ -66,6 +66,7 @@ fun HabitItemReorderableNew(
     backStack: SnapshotStateList<NavKey>,
     viewModel: MainPageViewModel,
     habit: HabitEntity,
+    habitCompletions: List<HabitCompletionEntity> = emptyList(),
     reorderableListScope: ReorderableCollectionItemScope? = null,
     isDragging: Boolean = false,
     isReorderableMode: Boolean = false,
@@ -97,17 +98,7 @@ fun HabitItemReorderableNew(
     } else {
         CardDefaults.cardElevation()
     }
-    val habitData = rememberSaveable { mutableStateOf<List<HabitCompletionEntity>?>(null) }
     val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-
-        coroutineScope.launch(Dispatchers.IO) {
-            viewModel.habitRepository.getAllHabitCompletionsByIdFlow(habit.id)
-                .collect { habitData.value = it }
-        }
-
-
-    }
     Card(
         modifier =
             Modifier.Companion
@@ -270,7 +261,7 @@ fun HabitItemReorderableNew(
                                 )
                             }
                         },
-                        habitData = habitData.value,
+                        habitData = habitCompletions,
                         firstDayOfWeek = firstDayOfWeek,
                         skipHabitForDate = { date ->
                             coroutineScope.launch(Dispatchers.IO) {

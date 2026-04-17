@@ -237,6 +237,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                                     reorderableLazyListState,
                                     key = habit.id
                                 ) { isDragging ->
+                                    val habitCompletions = viewModel.completionsByHabit.collectAsStateWithLifecycle().value[habit.id] ?: emptyList()
                                     CustomTheme(
                                         theme = allPreferences.getTheme(), // Ensure themeReal.value is not null here or provide a default
                                         primaryColor = habit.color,
@@ -251,6 +252,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                                             backStack = backStack,
                                             viewModel = viewModel,
                                             habit = habit,
+                                            habitCompletions = habitCompletions,
                                             reorderableListScope = this,
                                             isDragging = isDragging,
                                             isReorderableMode = isReorderableMode.value,
