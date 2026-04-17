@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.zavedahmad.yaHabit.database.PreferenceEntity
 import com.zavedahmad.yaHabit.database.constants.PreferenceKeys
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
 import com.zavedahmad.yaHabit.database.repositories.PreferencesRepository
 
@@ -41,11 +42,21 @@ class MainPageViewModel(
 
     private val _devMode = MutableStateFlow<Boolean>(false)
     val devMode = _devMode.asStateFlow()
+    private val _completionsByHabit = MutableStateFlow<Map<Int, List<HabitCompletionEntity>>>(emptyMap())
+    val completionsByHabit: StateFlow<Map<Int, List<HabitCompletionEntity>>> = _completionsByHabit.asStateFlow()
 
     init {
         collectPreferences()
         collectHabits()
+        collectCompletions()
+    }
 
+    private fun collectCompletions() {
+        viewModelScope.launch(Dispatchers.IO) {
+            habitRepository.getAllCompletionsGroupedByHabit().collect { completions ->
+                _completionsByHabit.value = completions
+            }
+        }
     }
 
     fun collectHabits() {
