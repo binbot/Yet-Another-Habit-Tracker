@@ -575,4 +575,13 @@ class HabitRepositoryImpl(
             completions.groupBy { it.habitId }
         }
     }
+
+    override fun getTodayCompletionsFlow(): Flow<Map<Int, HabitCompletionEntity?>> {
+        val today = LocalDate.now()
+        return habitCompletionDao.getAllCompletionsFlow().map { completions ->
+            completions
+                .filter { it.completionDate == today }
+                .associate { it.habitId to it }
+        }
+    }
 }

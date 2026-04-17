@@ -36,6 +36,7 @@ import androidx.glance.text.FontStyle
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.state
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
@@ -66,10 +67,12 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                     val habitRepository: HabitRepository = get()
                     val habits = habitRepository.getHabitsFlowSortedByIndex()
                         .collectAsState(initial = emptyList())
+                    val todayCompletions = habitRepository.getTodayCompletionsFlow()
+                        .collectAsState(initial = emptyMap())
                     Column(verticalAlignment = Alignment.CenterVertically) {
                         TitleBarWidget("Habits")
                         if (!habits.value.isEmpty()) {
-                            HabitItemsList(habits.value, habitRepository)
+                            HabitItemsList(habits.value, todayCompletions.value, habitRepository)
                         } else {
                             Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
@@ -91,14 +94,15 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
 }
 
 @Composable
-private fun HabitItemsList(habits: List<HabitEntity>, habitRepository: HabitRepository) {
+private fun HabitItemsList(
+    habits: List<HabitEntity>,
+    todayCompletions: Map<Int, HabitCompletionEntity?>,
+    habitRepository: HabitRepository
+) {
     LazyColumn {
 
         items(items = habits.filter { it.isArchived == false }) { habit ->
-            val habitCompletionEntity =
-                habitRepository.getEntryOfCertainHabitIdAndDateFlow(
-                    habit.id, LocalDate.now()
-                ).collectAsState(initial = null).value
+            val habitCompletionEntity = todayCompletions[habit.id]
             var buttonAction: () -> Unit = {}
             var iconComposable: (@Composable () -> Unit) = {}
             val coroutineScope = rememberCoroutineScope()
