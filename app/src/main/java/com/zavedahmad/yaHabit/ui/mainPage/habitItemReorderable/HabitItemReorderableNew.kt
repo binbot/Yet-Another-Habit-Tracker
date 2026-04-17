@@ -29,6 +29,7 @@ import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -99,6 +100,43 @@ fun HabitItemReorderableNew(
         CardDefaults.cardElevation()
     }
     val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
+
+    val onIncrement = remember(habit.id) {
+        { date: java.time.LocalDate ->
+            coroutineScope.launch(Dispatchers.IO) {
+                viewModel.habitRepository.incrementRepetitions(date = date, habitId = habit.id)
+            }
+            Unit
+        }
+    }
+
+    val onDeleteRepetitions = remember(habit.id) {
+        { date: java.time.LocalDate ->
+            coroutineScope.launch(Dispatchers.IO) {
+                viewModel.habitRepository.applyRepetitionForADate(date = date, habitId = habit.id, newRepetitionValue = 0.0)
+            }
+            Unit
+        }
+    }
+
+    val onSkip = remember(habit.id) {
+        { date: java.time.LocalDate ->
+            coroutineScope.launch(Dispatchers.IO) {
+                viewModel.habitRepository.setSkip(date = date, habitId = habit.id, skipValue = true)
+            }
+            Unit
+        }
+    }
+
+    val onUnskip = remember(habit.id) {
+        { date: java.time.LocalDate ->
+            coroutineScope.launch(Dispatchers.IO) {
+                viewModel.habitRepository.setSkip(date = date, habitId = habit.id, skipValue = false)
+            }
+            Unit
+        }
+    }
+
     Card(
         modifier =
             Modifier.Companion
@@ -239,48 +277,12 @@ fun HabitItemReorderableNew(
                 Column(Modifier.Companion.fillMaxWidth()) {
 
                     WeekCalendarDataNew(
-                        incrementHabit = { date ->
-
-                            coroutineScope.launch(
-                                Dispatchers.IO
-                            ) {
-                                viewModel.habitRepository.incrementRepetitions(
-                                    date = date,
-                                    habitId = habit.id
-                                )
-                            }
-                        },
-                        deleteRepetitionsForDate = { date ->
-                            coroutineScope.launch(
-                                Dispatchers.IO
-                            ) {
-                                viewModel.habitRepository.applyRepetitionForADate(
-                                    date = date,
-                                    habitId = habit.id,
-                                    newRepetitionValue = 0.0
-                                )
-                            }
-                        },
+                        incrementHabit = onIncrement,
+                        deleteRepetitionsForDate = onDeleteRepetitions,
                         habitData = habitCompletions,
                         firstDayOfWeek = firstDayOfWeek,
-                        skipHabitForDate = { date ->
-                            coroutineScope.launch(Dispatchers.IO) {
-                                viewModel.habitRepository.setSkip(
-                                    date = date,
-                                    habitId = habit.id,
-                                    skipValue = true
-                                )
-                            }
-                        },
-                        unSkipHabit = { date ->
-                            coroutineScope.launch {
-                                viewModel.habitRepository.setSkip(
-                                    date = date,
-                                    habitId = habit.id,
-                                    skipValue = false
-                                )
-                            }
-                        }, habitEntity = habit,
+                        skipHabitForDate = onSkip,
+                        unSkipHabit = onUnskip, habitEntity = habit,
                         dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate ->
                             DialogueForHabit(
                                 isVisible = visible,

@@ -73,13 +73,13 @@ fun WeekCalendarDataNew(
             var dayState = ""
             if (habitData != null) {
                 val datesMatching = habitData.filter { it.completionDate == day.date }
+                val hasMultipleEntries = datesMatching.size > 1
+                val habitCompletionEntity = datesMatching.firstOrNull()
 
-                var habitCompletionEntity: HabitCompletionEntity? = null
-                if (datesMatching.size > 1) {
+                if (hasMultipleEntries) {
                     dayState = "error"
-                } else if (datesMatching.size == 1) {
-                    hasNote = datesMatching[0].hasNote()
-                    habitCompletionEntity = datesMatching[0]
+                } else if (habitCompletionEntity != null) {
+                    hasNote = habitCompletionEntity.hasNote()
                     suffix = if (day.date > dateToday) {
                         "Disabled"
                     } else {
@@ -111,11 +111,8 @@ fun WeekCalendarDataNew(
 
                 DayItem(
                     hasNote = hasNote,
-                    repetitionsOnThisDay = if (dayState != "error" && datesMatching.size > 0) {
-                        datesMatching[0].repetitionsOnThisDay
-                    } else {
-                        0.0
-                    }, unSkipHabit = { unSkipHabit(day.date) },
+                    repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0,
+                    unSkipHabit = { unSkipHabit(day.date) },
                     date = day.date,
                     state = dayState,
                     skipHabit = { skipHabitForDate(day.date) },
