@@ -18,6 +18,7 @@ import com.zavedahmad.yaHabit.database.utils.findHabitClusters
 import com.zavedahmad.yaHabit.database.utils.processDateTriples
 import com.zavedahmad.yahabit.common.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
 import kotlin.random.Random
@@ -567,5 +568,11 @@ class HabitRepositoryImpl(
     }
     override fun getEntryOfCertainHabitIdAndDateFlow(habitId: Int, completionDate: LocalDate) : Flow<HabitCompletionEntity?>{
         return habitCompletionDao.getEntryOfCertainHabitIdAndDateFlow(habitId, completionDate)
+    }
+
+    override fun getAllCompletionsGroupedByHabit(): Flow<Map<Int, List<HabitCompletionEntity>>> {
+        return habitCompletionDao.getAllCompletionsFlow().map { completions ->
+            completions.groupBy { it.habitId }
+        }
     }
 }
