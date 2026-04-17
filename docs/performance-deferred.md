@@ -79,6 +79,21 @@ CustomTheme(
 - [ ] Archive/unarchive maintains colors
 - [ ] Widget displays habit colors correctly
 
+## Widget Improvements (Deferred)
+
+### Known Issues
+- [ ] **No partial completions** - Widget only supports skip or full completion
+- [ ] **No long-press data entry** - Can't input specific values like in the app
+- [ ] Only shows today's data, no date navigation
+
+### Location
+`widgets/src/main/java/com/zavedahmad/yaHabit/widgets/overviewWidget/MyAppWidget.kt`
+
+### Fix Approach
+1. Support partial completion states (partial fill, specific values)
+2. Add a dialog/entry mechanism for long-press
+3. Consider swipe gestures for date navigation
+
 ## Related Files
 
 | File | Purpose |
