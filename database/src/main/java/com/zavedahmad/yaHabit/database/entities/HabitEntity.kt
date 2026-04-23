@@ -30,7 +30,6 @@ data class HabitEntity(
 
     fun HabitEntity.isCompleted(completion: HabitCompletionEntity): Boolean {
     if (completion.isSkip()) return true
-    if (completion.isPartial()) return true // This is for cluster auto-fill logic
 
     return if (this.isNegative) {
         // Negative habit (e.g., limit smoking) is "complete" (success) if logged <= target

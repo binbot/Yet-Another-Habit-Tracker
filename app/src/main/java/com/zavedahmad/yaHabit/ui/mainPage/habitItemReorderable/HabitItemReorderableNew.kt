@@ -113,7 +113,7 @@ fun HabitItemReorderableNew(
     val onDeleteRepetitions = remember(habit.id) {
         { date: java.time.LocalDate ->
             coroutineScope.launch(Dispatchers.IO) {
-                viewModel.habitRepository.applyRepetitionForADate(date = date, habitId = habit.id, newRepetitionValue = 0.0)
+                viewModel.habitRepository.deleteHabitCompletionEntry(habitId = habit.id, date = date)
             }
             Unit
         }

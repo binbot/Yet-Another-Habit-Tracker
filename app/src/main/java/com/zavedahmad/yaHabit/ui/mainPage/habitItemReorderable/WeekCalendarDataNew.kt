@@ -104,7 +104,7 @@ fun WeekCalendarDataNew(
                         dayState = "incompleteDisabled"
                         suffix = "Disabled"
                     } else {
-                        dayState = if (habitEntity.isNegative) "absolute" else "incomplete"
+                        dayState = "incomplete"
                     }
 
                 }

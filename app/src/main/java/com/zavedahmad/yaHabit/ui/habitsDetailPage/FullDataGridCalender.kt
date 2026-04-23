@@ -169,7 +169,7 @@ else{
                         dayState = "incompleteDisabled"
                         suffix = "Disabled"
                     } else {
-                        dayState = if (habitEntity?.isNegative == true) "absolute" else "incomplete"
+                        dayState = "incomplete"
                     }
 
                 }

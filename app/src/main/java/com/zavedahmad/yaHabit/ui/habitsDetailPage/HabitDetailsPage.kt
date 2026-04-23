@@ -199,10 +199,9 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                         coroutineScope.launch(
                                             Dispatchers.IO
                                         ) {
-                                            viewModel.habitRepository.applyRepetitionForADate(
-                                                date = date,
+                                            viewModel.habitRepository.deleteHabitCompletionEntry(
                                                 habitId = habit.id,
-                                                newRepetitionValue = 0.0
+                                                date = date
                                             )
                                         }
                                     },
@@ -328,10 +327,9 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                         coroutineScope.launch(
                                             Dispatchers.IO
                                         ) {
-                                            viewModel.habitRepository.applyRepetitionForADate(
-                                                date = date,
+                                            viewModel.habitRepository.deleteHabitCompletionEntry(
                                                 habitId = habit.id,
-                                                newRepetitionValue = 0.0
+                                                date = date
                                             )
                                         }
                                     },
