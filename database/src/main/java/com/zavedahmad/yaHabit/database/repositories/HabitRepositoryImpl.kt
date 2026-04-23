@@ -472,7 +472,8 @@ class HabitRepositoryImpl(
     // Write operations
 
 
-    override suspend fun repairPartials(newHabitEntity: HabitEntity) {                              // todo this should also add partial to true to skipped habits
+    override suspend fun repairPartials(newHabitEntity: HabitEntity) {
+        val today = LocalDate.now()
 
         //  get all absolute entries of the habit
         val habitAbsoluteEntries = getAllAbsoluteHabitCompletionsById(newHabitEntity.id)
@@ -488,14 +489,17 @@ class HabitRepositoryImpl(
             // parse clusters
             val processedClusters = processDateTriples(clusters)
 
-            // from processed clusters remove all the absolute dates
+            // Convert to set for efficient lookup
+            val existingDates = habitAbsoluteEntries.map { it.completionDate }.toSet()
+
+            // from processed clusters remove all the absolute dates (only future dates)
             val removedAbsoluteFromProcessedDates =
-                processedClusters.filter { it !in habitAbsoluteEntries.map { it -> it.completionDate } }
+                processedClusters.filter { it !in existingDates && it >= today }
             // delete all partial from database
             habitCompletionDao.deleteAllPartialFromId(newHabitEntity.id)
 
             //  get all skipped Entries  which are present in processedClusters dates
-            val skippedEntriesWhosePartialIsToBeChangeToTrue = skippedEntries.filter { it.completionDate in processedClusters }
+            val skippedEntriesWhosePartialIsToBeChangeToTrue = skippedEntries.filter { it.completionDate in processedClusters && it.completionDate >= today }
 
             // change all skipped partial to true who are eligible
             skippedEntriesWhosePartialIsToBeChangeToTrue.forEach {
@@ -503,7 +507,7 @@ class HabitRepositoryImpl(
                     it.copy(partial = true)
                 )
             }
-            // add all the rest of dates as partials to database
+            // add all the rest of dates as partials to database (only future dates)
             removedAbsoluteFromProcessedDates.forEach {
                 addHabitCompletionEntry(
                     HabitCompletionEntity(

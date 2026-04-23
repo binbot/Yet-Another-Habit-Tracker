@@ -86,6 +86,10 @@ class AddHabitPageViewModel(
 
     fun setIsNegative(value: Boolean) {
         _isNegative.value = value
+        // For negative habits (e.g., "do 0 times"), default to 0 instead of 1
+        if (_repetitionPerDay.value == null || _repetitionPerDay.value == 1.0) {
+            _repetitionPerDay.value = if (value) 0.0 else 1.0
+        }
     }
 
     fun setRepetitionPerDay(repetition: Double) {
