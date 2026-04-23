@@ -37,6 +37,7 @@ import com.zavedahmad.yaHabit.database.entities.isCompleted
 @Composable
 fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     if (habitAllData != null) {
+        val habitColor = habitEntity.color
         val completedDates = habitAllData
             .filter { habitEntity.isCompleted(it) }
             .map { it.completionDate }
@@ -79,14 +80,14 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
 
         Column(Modifier.fillMaxWidth().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocalFireDepartment, "Current Streak", tint = Color(0xFFFF9800))
+                Icon(Icons.Default.LocalFireDepartment, "Current Streak", tint = habitColor)
                 Spacer(Modifier.width(8.dp))
                 Text("Current Streak: ", style = MaterialTheme.typography.titleMedium)
                 Text("$currentStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Stars, "Best Streak", tint = Color(0xFFFFD700))
+                Icon(Icons.Default.Stars, "Best Streak", tint = habitColor.copy(alpha = 0.7f))
                 Spacer(Modifier.width(8.dp))
                 Text("Best Streak: ", style = MaterialTheme.typography.titleMedium)
                 Text("$bestStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)

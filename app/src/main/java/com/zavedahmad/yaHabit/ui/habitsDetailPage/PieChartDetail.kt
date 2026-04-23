@@ -34,9 +34,10 @@ fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: Hab
     val numberOfFailure by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { !habitEntity.isCompleted(it) && !it.isSkip() }?.size ?: 0) } }
     val numberOfSkips by remember(habitAllData) { derivedStateOf { habitAllData?.filter { it.isSkip() }?.size ?: 0 } }
 
-    val colorSuccess = Color(0xFF4CAF50) // Green
-    val colorFailure = Color(0xFFF44336) // Red
-    val colorSkip = MaterialTheme.colorScheme.tertiary
+    val habitColor = habitEntity.color
+    val colorSuccess = habitColor
+    val colorFailure = habitColor.copy(alpha = 0.5f)
+    val colorSkip = MaterialTheme.colorScheme.outline
 
     val data = remember(habitAllData) {
         mutableStateOf(
