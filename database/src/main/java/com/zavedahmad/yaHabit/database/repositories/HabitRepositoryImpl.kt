@@ -492,30 +492,54 @@ class HabitRepositoryImpl(
             // Convert to set for efficient lookup
             val existingDates = habitAbsoluteEntries.map { it.completionDate }.toSet()
 
-            // from processed clusters remove all the absolute dates (only future dates)
-            val removedAbsoluteFromProcessedDates =
-                processedClusters.filter { it !in existingDates && it >= today }
+            // Calculate how many completions in this cycle
+            val completionsInCycle = habitAbsoluteEntries.count { entry ->
+                entry.completionDate in processedClusters
+            }
+            val quotaMet = completionsInCycle >= newHabitEntity.frequency
+
+            // Future dates that are in the cycle but not yet completed
+            val futureClusterDates = processedClusters.filter { it !in existingDates && it >= today }
+
             // delete all partial from database
             habitCompletionDao.deleteAllPartialFromId(newHabitEntity.id)
+            // delete all notNeeded from database (clean slate)
+            habitCompletionDao.deleteAllNotNeededFromId(newHabitEntity.id)
 
-            //  get all skipped Entries  which are present in processedClusters dates
-            val skippedEntriesWhosePartialIsToBeChangeToTrue = skippedEntries.filter { it.completionDate in processedClusters && it.completionDate >= today }
-
-            // change all skipped partial to true who are eligible
-            skippedEntriesWhosePartialIsToBeChangeToTrue.forEach {
-                addHabitCompletionEntry(
-                    it.copy(partial = true)
-                )
-            }
-            // add all the rest of dates as partials to database (only future dates)
-            removedAbsoluteFromProcessedDates.forEach {
-                addHabitCompletionEntry(
-                    HabitCompletionEntity(
-                        completionDate = it,
-                        habitId = newHabitEntity.id,
-                        partial = true
+            if (quotaMet) {
+                // Already met quota - mark all future dates as "not needed"
+                futureClusterDates.forEach { date ->
+                    addHabitCompletionEntry(
+                        HabitCompletionEntity(
+                            completionDate = date,
+                            habitId = newHabitEntity.id,
+                            isNotNeeded = true
+                        )
                     )
-                )
+                }
+            } else {
+                // Not yet met quota - mark as partial (normal behavior)
+                futureClusterDates.forEach { date ->
+                    addHabitCompletionEntry(
+                        HabitCompletionEntity(
+                            completionDate = date,
+                            habitId = newHabitEntity.id,
+                            partial = true
+                        )
+                    )
+                }
+            }
+
+            // Update skipped entries in the cluster
+            val skippedEntriesInCluster = skippedEntries.filter { it.completionDate in processedClusters && it.completionDate >= today }
+            skippedEntriesInCluster.forEach { skipped ->
+                if (quotaMet) {
+                    // If quota already met, skipped = not needed
+                    addHabitCompletionEntry(skipped.copy(isNotNeeded = true, partial = false))
+                } else {
+                    // Need to meet quota - partial represents still needed
+                    addHabitCompletionEntry(skipped.copy(partial = true, isNotNeeded = false))
+                }
             }
 
         }

@@ -48,6 +48,9 @@ interface HabitCompletionDao {
 
     @Query("DELETE FROM habitCompletion WHERE habitId = :habitId AND partial = 1")
     suspend fun deleteAllPartialFromId(habitId :Int)
+
+    @Query("DELETE FROM habitCompletion WHERE habitId = :habitId AND isNotNeeded = 1")
+    suspend fun deleteAllNotNeededFromId(habitId :Int)
     @Query("SELECT * FROM habitCompletion WHERE habitId = :habitId AND completionDate > :completionDate" )
     fun getEntriesAfterDate(habitId: Int, completionDate : Long): Flow<List<HabitCompletionEntity>>
 

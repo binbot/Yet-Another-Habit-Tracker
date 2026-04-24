@@ -154,6 +154,34 @@ fun DayItem(
 
         }
 
+        "notneeded" -> {
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
+            textColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.2f)
+            iconComposable = {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "not needed",
+                    tint = textColor.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+        "notneededDisabled" -> {
+            buttonAction = listOf(makeToast, makeToast)
+            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.15f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.1f)
+            iconComposable = {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "not needed",
+                    tint = textColor.copy(alpha = 0.3f)
+                )
+            }
+        }
+
         "absoluteDisabled" -> {
             buttonAction = listOf(makeToast, makeToast)
             bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.5f)

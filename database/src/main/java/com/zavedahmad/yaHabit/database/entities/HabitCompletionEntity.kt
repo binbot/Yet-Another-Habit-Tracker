@@ -30,6 +30,8 @@ data class HabitCompletionEntity(
     val note: String? = null,
     @ColumnInfo(defaultValue = "false")
     val skip: Boolean = false,
+    @ColumnInfo(defaultValue = "false")
+    val isNotNeeded: Boolean = false,
     @PrimaryKey(autoGenerate = true) val id: Int = 0
 
 ) : Parcelable
@@ -58,6 +60,10 @@ fun HabitCompletionEntity.hasNote(): Boolean {
 
 fun HabitCompletionEntity.isSkip(): Boolean {
     return this.skip
+}
+
+fun HabitCompletionEntity.isNotNeeded(): Boolean {
+    return this.isNotNeeded
 }
 
 

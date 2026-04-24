@@ -15,10 +15,10 @@ import com.zavedahmad.yaHabit.database.typeConverters.StreakTypeConverter
 
 @Database(
     entities = [PreferenceEntity::class, HabitEntity::class, HabitCompletionEntity::class],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],   // todo test migration from 1- 3 straight
-
-    )
+    version = 4,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
+    exportSchema = true
+)
 
 @TypeConverters(LocalDateConverter::class, ColorConvertor::class, StreakTypeConverter::class)
 abstract class MainDatabase : RoomDatabase() {
