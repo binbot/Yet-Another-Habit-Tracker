@@ -60,8 +60,9 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
         }
     }
 
-    val successColor = androidx.compose.ui.graphics.Color(0xFF4CAF50)
-    val failureColor = androidx.compose.ui.graphics.Color(0xFFF44336)
+    val habitColor = habitEntity.color
+    val successColor = habitColor
+    val failureColor = habitColor.copy(alpha = 0.5f)
 
     val data by remember(habitAllData, yearToShow) {
         derivedStateOf {
