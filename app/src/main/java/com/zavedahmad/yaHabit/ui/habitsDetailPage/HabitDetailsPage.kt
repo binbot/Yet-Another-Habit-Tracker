@@ -72,6 +72,7 @@ import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
 import com.zavedahmad.yaHabit.ui.theme.CustomTheme
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
+import com.zavedahmad.yaHabit.ui.habitsDetailPage.StatsSummaryCard
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -347,11 +348,14 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
+                            StatsSummaryCard(habitAllData, habit)
+                            Spacer(Modifier.height(20.dp))
+                            HorizontalDivider()
+                            Spacer(Modifier.height(20.dp))
                             FrequencyChart(habitAllData, habit)
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
-
 
                             PieChartDetail(habitAllData, habit)
                             Spacer(Modifier.height(20.dp))

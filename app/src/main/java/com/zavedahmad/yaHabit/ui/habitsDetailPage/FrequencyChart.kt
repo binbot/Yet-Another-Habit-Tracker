@@ -29,8 +29,12 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.isAbsolute
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isNotNeeded
 import com.zavedahmad.yaHabit.database.entities.isOnlyNote
+import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.Bars
@@ -62,20 +66,33 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
 
     val habitColor = habitEntity.color
     val successColor = habitColor
-    val failureColor = habitColor.copy(alpha = 0.5f)
+    val overageColor = habitColor.copy(alpha = 0.75f)
+    val partialColor = habitColor.copy(alpha = 0.5f)
+    val skipColor = MaterialTheme.colorScheme.outline
+    val notNeededColor = MaterialTheme.colorScheme.surfaceVariant
 
     val data by remember(habitAllData, yearToShow) {
         derivedStateOf {
 
                 allMonths.map { month ->
                     val monthData = currentYearData.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() }
-                    val successCount = monthData.filter { habitEntity.isCompleted(it) }.size
-                    val failureCount = monthData.filter { !habitEntity.isCompleted(it) }.size
+                    
+                    val completedCount = monthData.count { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }
+                    val overageCount = monthData.count { 
+                        !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
+                        it.isAbsolute() && !habitEntity.isCompleted(it) 
+                    }
+                    val partialCount = monthData.count { it.isPartial() && !it.isSkip() }
+                    val skippedCount = monthData.count { it.isSkip() }
+                    val notNeededCount = monthData.count { it.isNotNeeded() }
 
                     Bars(
                         label = month.month.name.slice(0..2), values = listOf(
-                            Bars.Data(value = successCount.toDouble(), color = SolidColor(successColor)),
-                            Bars.Data(value = failureCount.toDouble(), color = SolidColor(failureColor))
+                            Bars.Data(value = completedCount.toDouble(), color = SolidColor(successColor)),
+                            Bars.Data(value = overageCount.toDouble(), color = SolidColor(overageColor)),
+                            Bars.Data(value = partialCount.toDouble(), color = SolidColor(partialColor)),
+                            Bars.Data(value = skippedCount.toDouble(), color = SolidColor(skipColor)),
+                            Bars.Data(value = notNeededCount.toDouble(), color = SolidColor(notNeededColor))
                         )
                     )
                 }
