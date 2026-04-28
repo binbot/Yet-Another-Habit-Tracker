@@ -26,7 +26,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.state
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -34,10 +34,10 @@ import java.time.YearMonth
 @Composable
 fun FullDataGridCalender(
     incrementHabit: (date: LocalDate) -> Unit = {},
-
     deleteHabit: (date: LocalDate) -> Unit = {},
     initialMonthString: String? = null,
-    habitData: List<HabitCompletionEntity>? = null, gridHeight: Int = 190,
+    habitData: List<HabitCompletionEntity>? = null,
+    gridHeight: Int = 190,
     showDate: Boolean = false,
     interactive: Boolean = false,
     firstDayOfWeek: DayOfWeek,
@@ -47,17 +47,9 @@ fun FullDataGridCalender(
     dialogueComposable: @Composable (Boolean, () -> Unit, HabitCompletionEntity?, LocalDate) -> Unit
 ) {
     val currentMonth = remember { YearMonth.now() }
-//    val habitDataSorted = habitData.sortedBy { it.completionDate }
-
-
     val startMonth = currentMonth.minusMonths(12)
-    // Adjust as needed
-
-    val endMonth = remember { currentMonth.plusMonths(100) } // Adjust as needed
-    // Available from the library
+    val endMonth = remember { currentMonth.plusMonths(100) }
     val dateToday = LocalDate.now()
-    // CHANGE this to change grid height
-
 
     val calendarState = rememberHeatMapCalendarState(
         startMonth = startMonth,
@@ -67,145 +59,117 @@ fun FullDataGridCalender(
     )
     LaunchedEffect(calendarState.firstVisibleMonth) {
         calendarState.startMonth = calendarState.firstVisibleMonth.yearMonth.minusMonths(12)
-
         if (calendarState.firstVisibleMonth.yearMonth < YearMonth.now().minusMonths(12)) {
             calendarState.endMonth = calendarState.firstVisibleMonth.yearMonth.plusMonths(12)
         } else {
             calendarState.endMonth = YearMonth.now()
         }
     }
-if (habitData == null){}
-else{
-    Column {
-        //Text("first visible Month ${calendarState.firstVisibleMonth.yearMonth} \n last visibleMonth: ${calendarState.lastVisibleMonth.yearMonth} \n startMonth ${calendarState.startMonth} \n endMonth ${calendarState.endMonth}")
-        HeatMapCalendar(
-            weekHeaderPosition = HeatMapWeekHeaderPosition.End,
-            weekHeader = { weekDay ->
-                Row(
-                    Modifier
-
-                        .height((gridHeight / 8).dp),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        weekDay.name.slice(0..2),
-                        fontSize = 15.sp
-                    )
-
-
-                }
-            },
-            monthHeader = {
-
-                if (LocalDate.now().yearMonth != it.yearMonth) {
-                    Column(
+    if (habitData != null) {
+        Column {
+            HeatMapCalendar(
+                weekHeaderPosition = HeatMapWeekHeaderPosition.End,
+                weekHeader = { weekDay ->
+                    Row(
                         Modifier.height((gridHeight / 8).dp),
-                        verticalArrangement = Arrangement.Bottom
+                        horizontalArrangement = Arrangement.Start
                     ) {
-                        Text(
-                            it.yearMonth.month.toString().slice(0..2),
-                            fontSize = 15.sp, textAlign = TextAlign.Start
-                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(weekDay.name.slice(0..2), fontSize = 15.sp)
                     }
-                } else {
-                    if (LocalDate.now().dayOfMonth > 15) {
+                },
+                monthHeader = {
+                    if (LocalDate.now().yearMonth != it.yearMonth) {
                         Column(
                             Modifier.height((gridHeight / 8).dp),
                             verticalArrangement = Arrangement.Bottom
                         ) {
-                            Text(
-                                it.yearMonth.month.toString().slice(0..2),
-                                fontSize = 15.sp, textAlign = TextAlign.Start
-                            )
+                            Text(it.yearMonth.month.toString().slice(0..2), fontSize = 15.sp, textAlign = TextAlign.Start)
                         }
                     } else {
-                        Spacer(Modifier.height((gridHeight / 8).dp))
-                    }
-                }
-            },
-            modifier = Modifier
-                .height(gridHeight.dp)
-                .fillMaxWidth(),
-            state = calendarState,
-            dayContent = { day, heatMapWeek ->
-                var suffix = ""
-                var hasNote = false
-                var dayState = ""
-                val datesMatching = habitData.filter { it.completionDate == day.date }
-                var habitCompletionEntity:  HabitCompletionEntity? = null
-                if (datesMatching.size > 1) {
-                    dayState = "error"
-                } else if (datesMatching.size == 1) {
-                    hasNote = datesMatching[0].hasNote()
-                    habitCompletionEntity = datesMatching[0]
-                    suffix= if (day.date > dateToday){"Disabled"}else{""}
-                    
-                    val isCompleted = if (habitEntity != null) {
-                        habitEntity.isCompleted(habitCompletionEntity)
-                    } else {
-                        habitCompletionEntity.repetitionsOnThisDay > 0
-                    }
-
-                    if (habitEntity?.isNegative == true) {
-                        // Negative Habit: 
-                        // If stays under limit -> Absolute (Success)
-                        // If goes over limit -> Failed (Failure)
-                        dayState = if (isCompleted) "absolute" else "failed"
-                    } else {
-                        // Positive Habit:
-                        // If meets or exceeds goal -> Absolute (Success)
-                        // If some progress but not goal -> Partial (Partial)
-                        dayState = if (isCompleted) {
-                             if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                        if (LocalDate.now().dayOfMonth > 15) {
+                            Column(
+                                Modifier.height((gridHeight / 8).dp),
+                                verticalArrangement = Arrangement.Bottom
+                            ) {
+                                Text(it.yearMonth.month.toString().slice(0..2), fontSize = 15.sp, textAlign = TextAlign.Start)
+                            }
                         } else {
-                             "partial"
+                            Spacer(Modifier.height((gridHeight / 8).dp))
                         }
                     }
-                    
-                    dayState += suffix
-                } else {
-                    if (day.date > dateToday) {
-                        dayState = "incompleteDisabled"
-                        suffix = "Disabled"
+                },
+                modifier = Modifier.height(gridHeight.dp).fillMaxWidth(),
+                state = calendarState,
+                dayContent = { day, heatMapWeek ->
+                    var suffix = ""
+                    var hasNote = false
+                    var dayState = ""
+                    val datesMatching = habitData.filter { it.completionDate == day.date }
+                    var habitCompletionEntity: HabitCompletionEntity? = null
+                    if (datesMatching.size > 1) {
+                        dayState = "error"
+                    } else if (datesMatching.size == 1) {
+                        hasNote = datesMatching[0].hasNote()
+                        habitCompletionEntity = datesMatching[0]
+                        suffix = if (day.date > dateToday) "Disabled" else ""
+                        
+                        // Check skip state first
+                        if (habitCompletionEntity.isSkip()) {
+                            dayState = "skip"
+                        } else if (habitCompletionEntity.isNotNeeded) {
+                            dayState = "notneeded"
+                        } else {
+                            val isCompleted = habitEntity?.isCompleted(habitCompletionEntity) ?: (habitCompletionEntity.repetitionsOnThisDay > 0.0)
+                            if (habitEntity?.isNegative == true) {
+                                dayState = if (isCompleted) "absolute" else "failed"
+                            } else {
+                                dayState = if (isCompleted) {
+                                    if (habitCompletionEntity.repetitionsOnThisDay > (habitEntity?.repetitionPerDay ?: 1.0)) "absoluteMore" else "absolute"
+                                } else {
+                                    "partial"
+                                }
+                            }
+                        }
+                        dayState += suffix
                     } else {
-                        dayState = "incomplete"
-                    }
-
-                }
-                if ((dayState != "incompleteDisabled" && dayState != "absoluteDisabled" && dayState != "partialDisabled") || heatMapWeek.days.any { it.date == LocalDate.now() }) {
-                    Box(
-                        Modifier
-
-                            .height((gridHeight / 8).dp)
-                            .aspectRatio(1f),
-
-                        ) {
-                        Box(Modifier.padding((gridHeight / 80).dp)) {
-                            GridDayItem(hasNote = hasNote,
-                                state = dayState,
-                                incrementHabit = { incrementHabit(day.date) },
-                                deleteHabit = { deleteHabit(day.date) },
-                                date = day.date,
-                                showDate = showDate,
-                                interactive =  suffix != "Disabled" && interactive,
-                                dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(
-                                        visible,
-                                        onDismiss,
-                                        habitCompletionEntity,
-                                        day.date
-                                    )
-                                },
-                                skipHabit = { skipHabit(day.date) },
-                                unSkipHabit = { unSkipHabit(day.date) }
-                            )
+                        if (day.date > dateToday) {
+                            dayState = "incompleteDisabled"
+                            suffix = "Disabled"
+                        } else {
+                            dayState = "incomplete"
                         }
                     }
-
+                    if ((dayState != "incompleteDisabled" && dayState != "absoluteDisabled" && dayState != "partialDisabled") || heatMapWeek.days.any { it.date == LocalDate.now() }) {
+                        Box(Modifier.height((gridHeight / 8).dp).aspectRatio(1f)) {
+                            Box(Modifier.padding((gridHeight / 80).dp)) {
+                                GridDayItem(
+                                    hasNote = hasNote,
+                                    state = dayState,
+                                    incrementHabit = {
+                                        if (dayState == "skip") {
+                                            deleteHabit(day.date)
+                                        } else if (dayState == "absolute" || dayState == "absoluteMore") {
+                                            skipHabit(day.date)
+                                        } else {
+                                            incrementHabit(day.date)
+                                        }
+                                    },
+                                    deleteHabit = { deleteHabit(day.date) },
+                                    date = day.date,
+                                    showDate = showDate,
+                                    interactive = suffix != "Disabled",
+                                    dialogueComposable = { visible, onDismiss ->
+                                        dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
+                                    },
+                                    skipHabit = { skipHabit(day.date) },
+                                    unSkipHabit = { unSkipHabit(day.date) }
+                                )
+                            }
+                        }
+                    }
                 }
-            })
-
-
-    }}
+            )
+        }
+    }
 }

@@ -73,6 +73,7 @@ import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
 import com.zavedahmad.yaHabit.ui.theme.CustomTheme
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -309,18 +310,41 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                     .clip(RoundedCornerShape(20.dp))
                                     .clickable(onClick = { dialogueVisible.value = true })
                             ) {
-                                FullDataGridCalender(
+                            FullDataGridCalender(
                                     habitData = habitAllData,
                                     incrementHabit = { date ->
-
                                         coroutineScope.launch(
                                             Dispatchers.IO
                                         ) {
-                                            viewModel.habitRepository.applyRepetitionForADate(
-                                                date = date,
-                                                habitId = habit.id,
-                                                newRepetitionValue = habit.repetitionPerDay
-                                            )
+                                        // Cycling logic: skip → delete, complete → skip, else → increment
+                                             val existingEntry = habitAllData?.find { 
+                                                 it.completionDate == date && !it.isSkip()
+                                             }
+                                             val isCurrentlySkipped = habitAllData?.find { 
+                                                 it.completionDate == date && it.isSkip()
+                                             } != null
+                                            
+                                            if (isCurrentlySkipped) {
+                                                // Skip → Delete (back to empty)
+                                                viewModel.habitRepository.deleteHabitCompletionEntry(
+                                                    habitId = habit.id,
+                                                    date = date
+                                                )
+                                            } else if (existingEntry != null) {
+                                                // Has entry → Set skip
+                                                viewModel.habitRepository.setSkip(
+                                                    date = date,
+                                                    habitId = habit.id,
+                                                    skipValue = true
+                                                )
+                                            } else {
+                                                // Empty → Increment
+                                                viewModel.habitRepository.applyRepetitionForADate(
+                                                    date = date,
+                                                    habitId = habit.id,
+                                                    newRepetitionValue = habit.repetitionPerDay
+                                                )
+                                            }
                                         }
                                     },
                                     deleteHabit = { date ->
