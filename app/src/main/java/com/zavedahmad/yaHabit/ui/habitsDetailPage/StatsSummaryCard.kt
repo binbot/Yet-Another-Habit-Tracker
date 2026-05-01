@@ -23,63 +23,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isAbsolute
 import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.isNotNeeded
-import com.zavedahmad.yaHabit.database.entities.isOnlyNote
-import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
+import java.util.Locale
 
 @Composable
 fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     val habitColor = habitEntity.color
     
-    val totalDays by remember(habitAllData) { derivedStateOf { habitAllData?.size ?: 0 } }
+    // "Days Tracked" = days with any entry (not days since creation)
+    val daysTracked by remember(habitAllData) { 
+        derivedStateOf { habitAllData?.size ?: 0 } 
+    }
     
+    // Completed days
     val completedDays by remember(habitAllData) { 
         derivedStateOf { 
-            habitAllData?.count { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() } ?: 0 
+            habitAllData?.count { habitEntity.isCompleted(it) && !it.isSkip() } ?: 0 
         } 
     }
     
-    val partialDays by remember(habitAllData) { 
-        derivedStateOf { 
-            habitAllData?.count { it.isPartial() && !it.isSkip() } ?: 0 
-        } 
-    }
-    
-    val overageDays by remember(habitAllData) { 
-        derivedStateOf { 
-            habitAllData?.count { 
-                !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
-                it.isAbsolute() && !habitEntity.isCompleted(it) 
-            } ?: 0 
-        } 
-    }
-    
-    val skippedDays by remember(habitAllData) { 
-        derivedStateOf { 
-            habitAllData?.count { it.isSkip() } ?: 0 
-        } 
-    }
-    
-    val failedDays by remember(habitAllData) { 
-        derivedStateOf { 
-            if (habitEntity.isNegative) {
-                habitAllData?.count { !habitEntity.isCompleted(it) && !it.isSkip() } ?: 0
-            } else {
-                0
-            }
-        } 
-    }
-    
+    // Completion rate (completed / tracked)
     val completionRate by remember(habitAllData) { 
         derivedStateOf { 
-            if (totalDays > 0) {
-                (completedDays.toFloat() / totalDays * 100).toInt()
+            if (daysTracked > 0) {
+                (completedDays.toFloat() / daysTracked * 100).toInt()
             } else 0
         } 
     }
+    
+    // Failed days data (for negative habits: days over limit, for positive: partial days)
+    val failedDaysData by remember(habitAllData) {
+        derivedStateOf {
+            habitAllData?.filter { 
+                if (habitEntity.isNegative) {
+                    !habitEntity.isCompleted(it) && !it.isSkip()
+                } else {
+                    !habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded
+                }
+            } ?: emptyList()
+        }
+    }
+    val failedDaysCount = failedDaysData.size
+    
+    // Repetition stats for failed days (min, max, avg)
+    val avgRepsOnFailed = if (failedDaysCount > 0) {
+        failedDaysData.map { it.repetitionsOnThisDay }.average()
+    } else 0.0
+    val maxRepsOnFailed = failedDaysData.maxOfOrNull { it.repetitionsOnThisDay } ?: 0.0
+    val minRepsOnFailed = failedDaysData.minOfOrNull { it.repetitionsOnThisDay } ?: 0.0
     
     Card(
         colors = CardDefaults.cardColors(
@@ -101,57 +93,63 @@ fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: Ha
             
             Spacer(modifier = Modifier.height(4.dp))
             
-            // Primary metrics row
+            // Row 1: Days Tracked + Completion Rate
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(
-                    label = "Total Days",
-                    value = "$totalDays",
+                    label = "Days Tracked",
+                    value = "$daysTracked",
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 StatItem(
-                    label = if (habitEntity.isNegative) "Under Limit" else "Completed",
-                    value = "$completedDays",
-                    color = habitColor
-                )
-                StatItem(
-                    label = "Completion",
+                    label = "Completion Rate",
                     value = "$completionRate%",
                     color = habitColor
                 )
             }
             
-            // Secondary metrics row
+            // Row 2: Completed days
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(
-                    label = if (habitEntity.isNegative) "Over Limit" else "Partial",
-                    value = "$partialDays",
-                    color = habitColor.copy(alpha = 0.7f)
-                )
-                StatItem(
-                    label = "Over Goal",
-                    value = "$overageDays",
-                    color = habitColor.copy(alpha = 0.85f)
-                )
-                StatItem(
-                    label = "Skipped",
-                    value = "$skippedDays",
-                    color = MaterialTheme.colorScheme.outline
+                    label = if (habitEntity.isNegative) "Under Limit" else "Completed",
+                    value = "$completedDays",
+                    color = habitColor
                 )
             }
             
-            // Failed metric for negative habits
-            if (habitEntity.isNegative) {
-                StatItem(
-                    label = "Failed (Over Limit)",
-                    value = "$failedDays",
-                    color = Color(0xFFF44336)
+            // Row 3: Failed days details (only if there are failures)
+            if (failedDaysCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (habitEntity.isNegative) "Over Limit Days:" else "Partial Days:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = habitColor
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    StatItem(
+                        label = "Min",
+                        value = "${minRepsOnFailed.toInt()}",
+                        color = Color(0xFFF44336)
+                    )
+                    StatItem(
+                        label = "Max",
+                        value = "${maxRepsOnFailed.toInt()}",
+                        color = Color(0xFFF44336)
+                    )
+                    StatItem(
+                        label = "Avg",
+                        value = "${String.format(Locale.US, "%.1f", avgRepsOnFailed)}",
+                        color = Color(0xFFF44336)
+                    )
+                }
             }
         }
     }

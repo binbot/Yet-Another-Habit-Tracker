@@ -34,10 +34,26 @@ import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
 fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    val numberOfSuccess by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }?.size ?: 0) } }
-    val numberOfPartial by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0) } }
-    val numberOfOverage by remember(habitAllData) { derivedStateOf { (habitAllData?.filter { !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && it.isAbsolute() && !habitEntity.isCompleted(it) }?.size ?: 0) } }
-    val numberOfSkips by remember(habitAllData) { derivedStateOf { habitAllData?.filter { it.isSkip() }?.size ?: 0 } }
+    val numberOfSuccess by remember(habitAllData) { derivedStateOf { 
+        (habitAllData?.filter { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }?.size ?: 0) 
+    } }
+    val numberOfPartial by remember(habitAllData) { derivedStateOf { 
+        (habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0) 
+    } }
+    val numberOfOverage by remember(habitAllData) { derivedStateOf { 
+        (habitAllData?.filter { 
+            !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
+            it.isAbsolute() && !habitEntity.isCompleted(it) 
+        }?.size ?: 0) 
+    } }
+    val numberOfSkips by remember(habitAllData) { derivedStateOf { 
+        habitAllData?.filter { it.isSkip() }?.size ?: 0 
+    } }
+    
+    // For negative habits, "Over Goal" should be days where repetitions > goal (over limit)
+    // Current logic: isAbsolute() && !isCompleted() - this may be wrong for goal=0
+    // Debug: For negative habit with goal=0, isCompleted checks reps <= 0, isAbsolute checks reps > 0
+    // So isAbsolute() && !isCompleted() = reps > 0 && reps > 0 = reps > 0 (correct for over limit)
 
     val habitColor = habitEntity.color
     val colorSuccess = habitColor

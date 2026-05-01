@@ -117,6 +117,12 @@ fun GridDayItem(
             noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
 
         }
+        "notneeded" -> {
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
+            textColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            noteIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        }
         "failed" -> {
             bgColor = Color(0xFFF44336)
             textColor = Color.White
