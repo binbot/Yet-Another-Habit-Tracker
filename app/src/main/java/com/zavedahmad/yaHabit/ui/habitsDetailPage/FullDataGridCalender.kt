@@ -26,6 +26,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.state
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -141,28 +142,34 @@ else{
                     habitCompletionEntity = datesMatching[0]
                     suffix= if (day.date > dateToday){"Disabled"}else{""}
                     
-                    val isCompleted = if (habitEntity != null) {
-                        habitEntity.isCompleted(habitCompletionEntity)
+                    // Check skip state first
+                    if (habitCompletionEntity.isSkip()) {
+                        dayState = "skip"
+                    } else if (habitCompletionEntity.isNotNeeded) {
+                        dayState = "notneeded"
                     } else {
-                        habitCompletionEntity.repetitionsOnThisDay > 0
-                    }
-
-                    if (habitEntity?.isNegative == true) {
-                        // Negative Habit: 
-                        // If stays under limit -> Absolute (Success)
-                        // If goes over limit -> Failed (Failure)
-                        dayState = if (isCompleted) "absolute" else "failed"
-                    } else {
-                        // Positive Habit:
-                        // If meets or exceeds goal -> Absolute (Success)
-                        // If some progress but not goal -> Partial (Partial)
-                        dayState = if (isCompleted) {
-                             if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                        val isCompleted = if (habitEntity != null) {
+                            habitEntity.isCompleted(habitCompletionEntity)
                         } else {
-                             "partial"
+                            habitCompletionEntity.repetitionsOnThisDay > 0.0
+                        }
+
+                        if (habitEntity?.isNegative == true) {
+                            // Negative Habit: 
+                            // If stays under limit -> Absolute (Success)
+                            // If goes over limit -> Failed (Failure)
+                            dayState = if (isCompleted) "absolute" else "failed"
+                        } else {
+                            // Positive Habit:
+                            // If meets or exceeds goal -> Absolute (Success)
+                            // If some progress but not goal -> Partial
+                            dayState = if (isCompleted) {
+                                if (habitCompletionEntity.repetitionsOnThisDay > (habitEntity?.repetitionPerDay ?: 1.0)) "absoluteMore" else "absolute"
+                            } else {
+                                "partial"
+                            }
                         }
                     }
-                    
                     dayState += suffix
                 } else {
                     if (day.date > dateToday) {
@@ -184,7 +191,16 @@ else{
                         Box(Modifier.padding((gridHeight / 80).dp)) {
                             GridDayItem(hasNote = hasNote,
                                 state = dayState,
-                                incrementHabit = { incrementHabit(day.date) },
+                                incrementHabit = { 
+                                    // Cycling logic: failed → delete, skip → delete, absolute → skip, else → increment
+                                    if (dayState == "failed" || dayState == "skip") {
+                                        deleteHabit(day.date)  // Failed/Skip → Empty
+                                    } else if (dayState == "absolute" || dayState == "absoluteMore") {
+                                        skipHabit(day.date)  // Complete → Skip
+                                    } else {
+                                        incrementHabit(day.date)  // Empty/Partial → Increment
+                                    }
+                                },
                                 deleteHabit = { deleteHabit(day.date) },
                                 date = day.date,
                                 showDate = showDate,

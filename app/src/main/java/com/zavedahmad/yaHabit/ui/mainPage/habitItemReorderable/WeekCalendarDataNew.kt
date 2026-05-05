@@ -14,6 +14,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.isNotNeeded
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.state
 
 import com.zavedahmad.yaHabit.ui.components.DaysOfWeekTitle
@@ -86,9 +87,11 @@ fun WeekCalendarDataNew(
                     } else {
                         ""
                     }
-
-                    // Check for not needed first
-                    if (habitCompletionEntity.isNotNeeded()) {
+                    
+                    // Check skip state first
+                    if (habitCompletionEntity.isSkip()) {
+                        dayState = "skip"
+                    } else if (habitCompletionEntity.isNotNeeded()) {
                         dayState = "notneeded"
                     } else {
                         val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
@@ -123,7 +126,14 @@ fun WeekCalendarDataNew(
                     state = dayState,
                     skipHabit = { skipHabitForDate(day.date) },
                     incrementHabit = {
-                        incrementHabit(day.date)
+                        // Cycling logic: failed/skip → delete, absolute → skip, else → increment
+                        if (dayState == "failed" || dayState == "skip") {
+                            deleteRepetitionsForDate(day.date)  // Failed/Skip → Empty
+                        } else if (dayState == "absolute" || dayState == "absoluteMore") {
+                            skipHabitForDate(day.date)  // Complete → Skip
+                        } else {
+                            incrementHabit(day.date)  // Empty/Partial → Increment
+                        }
                     },
                     deleteHabit = {
                         deleteRepetitionsForDate(day.date)

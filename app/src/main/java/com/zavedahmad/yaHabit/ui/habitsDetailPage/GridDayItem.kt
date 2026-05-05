@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -119,7 +121,7 @@ fun GridDayItem(
         }
         "notneeded" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
+            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             textColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             noteIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         }
@@ -166,9 +168,35 @@ fun GridDayItem(
 
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-
-            if (showDate) {
-                Text(date.dayOfMonth.toString(), color = textColor)
+            
+            // Show icon based on state
+            when (state) {
+                "notneeded" -> {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "not needed",
+                        tint = textColor.copy(alpha = 0.5f)
+                    )
+                }
+                "failed" -> {
+                    Text(
+                        "X",
+                        color = textColor,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                }
+                "skip" -> {
+                    Icon(
+                        Icons.Default.DoubleArrow,
+                        contentDescription = "skipped",
+                        tint = textColor
+                    )
+                }
+                else -> {
+                    if (showDate) {
+                        Text(date.dayOfMonth.toString(), color = textColor)
+                    }
+                }
             }
         }
     }
