@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -253,26 +252,13 @@ fun HabitItemReorderableNew(
                             Modifier.Companion
                         }
 
-                    ) {
+                    } {
                         Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
                     }
-                }
-                /*IconButton(
-                    modifier = with(reorderableListScope) {
-                        Modifier.draggableHandle(
+                    }
 
-                        )
-                    },
-                    onClick = {},
-                ) {
-                    Icon(
-                        Icons.Rounded.DragHandle,
-                        contentDescription = "Reorder"
-                    )
-                }*/
+                    }
 
-
-            }
             AnimatedVisibility(visible = !isReorderableMode) {
                 Column(Modifier.Companion.fillMaxWidth()) {
 

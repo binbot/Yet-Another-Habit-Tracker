@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import java.time.LocalDate
 import kotlin.collections.List
 
@@ -41,7 +42,8 @@ fun GridDayItem(
     skipHabit: () -> Unit,
     hasNote: Boolean = false,
     unSkipHabit: () -> Unit,
-    dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit
+    dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit,
+    habitEntity: HabitEntity? = null
 ) {
     val isDialogVisible = remember { mutableStateOf(false) }
     var buttonAction: List<() -> Unit> = listOf({}, {})
@@ -169,7 +171,7 @@ fun GridDayItem(
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             
-            // Show icon based on state
+            // Show icon based on state - but NOT for negative habits showing "failed" (X doesn't make sense)
             when (state) {
                 "notneeded" -> {
                     Icon(
@@ -178,19 +180,22 @@ fun GridDayItem(
                         tint = textColor.copy(alpha = 0.5f)
                     )
                 }
-                "failed" -> {
-                    Text(
-                        "X",
-                        color = textColor,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                }
                 "skip" -> {
                     Icon(
                         Icons.Default.DoubleArrow,
                         contentDescription = "skipped",
                         tint = textColor
                     )
+                }
+                "failed" -> {
+                    // Only show X for positive habits (partial) - negative habits should show color only
+                    if (habitEntity?.isNegative != true) {
+                        Text(
+                            "X",
+                            color = textColor,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        )
+                    }
                 }
                 else -> {
                     if (showDate) {

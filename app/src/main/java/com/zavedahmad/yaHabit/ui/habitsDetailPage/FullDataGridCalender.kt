@@ -192,7 +192,7 @@ else{
                             GridDayItem(hasNote = hasNote,
                                 state = dayState,
                                 incrementHabit = { 
-                                    // Cycling logic: failed → delete, skip → delete, absolute → skip, else → increment
+                                    // Cycling logic: failed/skip → delete, absolute → skip, else → increment
                                     if (dayState == "failed" || dayState == "skip") {
                                         deleteHabit(day.date)  // Failed/Skip → Empty
                                     } else if (dayState == "absolute" || dayState == "absoluteMore") {
@@ -204,24 +204,20 @@ else{
                                 deleteHabit = { deleteHabit(day.date) },
                                 date = day.date,
                                 showDate = showDate,
-                                interactive =  suffix != "Disabled" && interactive,
+                                interactive = suffix != "Disabled",
                                 dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(
-                                        visible,
-                                        onDismiss,
-                                        habitCompletionEntity,
-                                        day.date
-                                    )
+                                    dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
                                 },
                                 skipHabit = { skipHabit(day.date) },
-                                unSkipHabit = { unSkipHabit(day.date) }
+                                unSkipHabit = { unSkipHabit(day.date) },
+                                habitEntity = habitEntity
                             )
                         }
                     }
-
+                    
                 }
             })
-
-
+    
+    
     }}
 }

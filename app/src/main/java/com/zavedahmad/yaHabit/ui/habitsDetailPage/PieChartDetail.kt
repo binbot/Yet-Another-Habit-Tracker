@@ -34,39 +34,55 @@ import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
 fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
+    // For positive habits: "Complete" = met goal, "Partial" = some progress but not goal
+    // For negative habits: "Under Limit" = success (met goal), "Over Limit" = exceeded limit
     val numberOfSuccess by remember(habitAllData) { derivedStateOf { 
         (habitAllData?.filter { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }?.size ?: 0) 
     } }
+    
+    // For positive habits: "Partial" = has entry but didn't meet goal (partial field = true)
+    // For negative habits: "Over Limit" should NOT be shown in "Partial" - it's a separate metric
     val numberOfPartial by remember(habitAllData) { derivedStateOf { 
-        (habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0) 
+        if (habitEntity.isNegative) {
+            0 // Don't count "Over Limit" as "Partial" for negative habits
+        } else {
+            (habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0) 
+        }
     } }
-    val numberOfOverage by remember(habitAllData) { derivedStateOf { 
-        (habitAllData?.filter { 
-            !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
-            it.isAbsolute() && !habitEntity.isCompleted(it) 
-        }?.size ?: 0) 
+    
+    // Over Goal/Over Limit: days where exceeded target
+    val numberOfOverLimit by remember(habitAllData) { derivedStateOf { 
+        if (habitEntity.isNegative) {
+            // Negative habit: days where did habit more than allowed (reps > goal)
+            (habitAllData?.filter { 
+                !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
+                it.isAbsolute() && !habitEntity.isCompleted(it) 
+            }?.size ?: 0)
+        } else {
+            // Positive habit: days where reps exceed goal
+            (habitAllData?.filter { 
+                !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
+                it.isAbsolute() && !habitEntity.isCompleted(it) 
+            }?.size ?: 0)
+        }
     } }
+    
     val numberOfSkips by remember(habitAllData) { derivedStateOf { 
         habitAllData?.filter { it.isSkip() }?.size ?: 0 
     } }
     
-    // For negative habits, "Over Goal" should be days where repetitions > goal (over limit)
-    // Current logic: isAbsolute() && !isCompleted() - this may be wrong for goal=0
-    // Debug: For negative habit with goal=0, isCompleted checks reps <= 0, isAbsolute checks reps > 0
-    // So isAbsolute() && !isCompleted() = reps > 0 && reps > 0 = reps > 0 (correct for over limit)
-
     val habitColor = habitEntity.color
     val colorSuccess = habitColor
-    val colorPartial = habitColor.copy(alpha = 0.5f)
-    val colorOverage = habitColor.copy(alpha = 0.75f)
+    val colorPartial = if (habitEntity.isNegative) Color(0xFFF44336).copy(alpha = 0.7f) else habitColor.copy(alpha = 0.5f)
+    val colorOverLimit = Color(0xFFF44336).copy(alpha = 0.75f)
     val colorSkip = MaterialTheme.colorScheme.outline
-
+    
     val data = remember(habitAllData) {
         mutableStateOf(
             listOf(
-                Pie(label = if (habitEntity.isNegative) "Failed" else "Complete", data = numberOfSuccess.toDouble(), color = colorSuccess, selectedColor = Color.Green),
-                Pie(label = if (habitEntity.isNegative) "Success" else "Partial", data = numberOfPartial.toDouble(), color = colorPartial, selectedColor = Color.Red),
-                Pie(label = "Over Goal", data = numberOfOverage.toDouble(), color = colorOverage, selectedColor = Color.Yellow),
+                Pie(label = if (habitEntity.isNegative) "Under Limit" else "Complete", data = numberOfSuccess.toDouble(), color = colorSuccess, selectedColor = Color.Green),
+                Pie(label = if (habitEntity.isNegative) "Over Limit" else "Partial", data = numberOfPartial.toDouble(), color = colorPartial, selectedColor = Color.Red),
+                Pie(label = "Over Goal", data = numberOfOverLimit.toDouble(), color = colorOverLimit, selectedColor = Color.Yellow),
                 Pie(label = "Skipped", data = numberOfSkips.toDouble(), color = colorSkip, selectedColor = Color.Blue),
             )
         )
@@ -75,14 +91,15 @@ fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: Hab
         Column {
             Text(if (habitEntity.isNegative) "Under Limit: $numberOfSuccess" else "Completed: $numberOfSuccess", color = colorSuccess)
             Text(if (habitEntity.isNegative) "Over Limit: $numberOfPartial" else "Partial: $numberOfPartial", color = colorPartial)
-            Text("Over Goal: $numberOfOverage", color = colorOverage)
+            Text("Over Goal: $numberOfOverLimit", color = colorOverLimit)
             Text("Skipped: $numberOfSkips", color = colorSkip)
         }
         Surface (Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)){
             Box(Modifier.padding(8.dp)){
-    PieChart(
-        modifier = Modifier.size(200.dp),
-        data = data.value,
-        style = Pie.Style.Stroke( 30.dp)
-    )}}}
+        PieChart(
+            modifier = Modifier.size(200.dp),
+            data = data.value,
+            style = Pie.Style.Stroke(30.dp)
+        )}}
+    }
 }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 
 class HabitDetailsPageViewModel(
@@ -92,6 +93,10 @@ class HabitDetailsPageViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             habitRepository.unArchive(id)
         }
+    }
+
+    suspend fun getEntryOfCertainHabitIdAndDate(habitId: Int, date: LocalDate): HabitCompletionEntity? {
+        return habitRepository.getEntryOfCertainHabitIdAndDate(habitId, date)
     }
 
 

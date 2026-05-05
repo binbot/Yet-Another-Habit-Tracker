@@ -2,7 +2,6 @@ package com.zavedahmad.yaHabit.ui.mainPage.habitItemReorderable
 
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -29,12 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -79,7 +76,6 @@ fun DayItem(
             textColor = MaterialTheme.colorScheme.primary
             borderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
             icon = Icons.Default.Check
-//            iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
             iconComposable = {
                 Text(
                     text = formattedNumber,

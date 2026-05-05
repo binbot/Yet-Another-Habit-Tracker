@@ -594,6 +594,10 @@ class HabitRepositoryImpl(
             completionDate = completionDate
         )
     }
+    override suspend fun getEntryOfCertainHabitIdAndDate(habitId: Int, completionDate: LocalDate) : HabitCompletionEntity?{
+        return habitCompletionDao.getEntryOfCertainHabitIdAndDate(habitId, completionDate)
+    }
+
     override fun getEntryOfCertainHabitIdAndDateFlow(habitId: Int, completionDate: LocalDate) : Flow<HabitCompletionEntity?>{
         return habitCompletionDao.getEntryOfCertainHabitIdAndDateFlow(habitId, completionDate)
     }

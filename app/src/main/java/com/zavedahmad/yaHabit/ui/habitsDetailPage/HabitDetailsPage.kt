@@ -313,14 +313,21 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                 FullDataGridCalender(
                                     habitData = habitAllData,
                                     incrementHabit = { date ->
-
                                         coroutineScope.launch(
                                             Dispatchers.IO
                                         ) {
+                                            // For negative habits, increment by 1 each tap
+                                            // For positive habits, set to target value
+                                            val entry = viewModel.getEntryOfCertainHabitIdAndDate(habit.id, date)
+                                            val newValue = if (habit.isNegative) {
+                                                (entry?.repetitionsOnThisDay ?: 0.0) + 1.0
+                                            } else {
+                                                habit.repetitionPerDay
+                                            }
                                             viewModel.habitRepository.applyRepetitionForADate(
                                                 date = date,
                                                 habitId = habit.id,
-                                                newRepetitionValue = habit.repetitionPerDay
+                                                newRepetitionValue = newValue
                                             )
                                         }
                                     },

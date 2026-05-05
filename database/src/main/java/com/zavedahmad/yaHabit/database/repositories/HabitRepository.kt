@@ -33,6 +33,7 @@ interface HabitRepository {
     fun getAllSkippedHabitCompletionsById(habitId: Int): List<HabitCompletionEntity>
     fun getAllHabitCompletionsByIdFlow(id: Int): Flow<List<HabitCompletionEntity>?>
     fun getEntriesAfterDate(habitId: Int, completionDate: Long): Flow<List<HabitCompletionEntity>?>
+    suspend fun getEntryOfCertainHabitIdAndDate(habitId: Int, completionDate: LocalDate) : HabitCompletionEntity?
     fun getEntryOfCertainHabitIdAndDateFlow(habitId: Int, completionDate: LocalDate) : Flow<HabitCompletionEntity?>
     fun getAllCompletionsGroupedByHabit(): Flow<Map<Int, List<HabitCompletionEntity>>>
     fun getTodayCompletionsFlow(): Flow<Map<Int, HabitCompletionEntity?>>
