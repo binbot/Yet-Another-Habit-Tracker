@@ -3,6 +3,7 @@ package com.zavedahmad.yaHabit.ui.habitsDetailPage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,7 +34,6 @@ import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.isNotNeeded
 import ir.ehsannarmani.compose_charts.ColumnChart
-import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.Bars
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
 import ir.ehsannarmani.compose_charts.models.LabelHelperProperties
@@ -116,15 +116,23 @@ fun FrequencyChart(
     ColumnChart(
         modifier = Modifier
             .height(250.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(8.dp),
         data = data,
         labelProperties = LabelProperties(
-            enabled = true
-        ),
-        indicatorProperties = HorizontalIndicatorProperties(
             enabled = true,
             textStyle = TextStyle(fontSize = 10.sp)
         ),
-        labelHelperProperties = LabelHelperProperties(enabled = false)
+        indicatorProperties = HorizontalIndicatorProperties(
+            enabled = true,
+            textStyle = TextStyle(fontSize = 10.sp),
+            contentBuilder = { value ->
+                value.toInt().toString()
+            }
+        ),
+        labelHelperProperties = LabelHelperProperties(
+            enabled = true,
+            textStyle = TextStyle(fontSize = 10.sp)
+        )
     )
 }

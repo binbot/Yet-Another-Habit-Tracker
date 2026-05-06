@@ -1,6 +1,5 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
-import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -11,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,14 +26,13 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import java.time.LocalDate
-import kotlin.collections.List
 
-// Done implement note also
 @Composable
 fun GridDayItem(
     state: String = "error",
     incrementHabit: () -> Unit = {},
     date: LocalDate,
+    repetitionsOnThisDay: Double = 0.0,
     primaryColor: Color = MaterialTheme.colorScheme.primary,
     secondaryColor: Color = MaterialTheme.colorScheme.secondary,
     tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
@@ -50,108 +47,66 @@ fun GridDayItem(
 ) {
     val isDialogVisible = remember { mutableStateOf(false) }
     var buttonAction: List<() -> Unit> = listOf({}, {})
-    var textColor = MaterialTheme.colorScheme.onError
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
-    var bgColor: Color
-    var noteIndicatorColor: Color
-    when (state) {
-        "absolute" -> {
+    
+    var bgColor: Color = Color.Transparent
+    var textColor: Color = Color.Transparent
+    var noteIndicatorColor: Color = Color.Transparent
+
+    val goal = habitEntity?.repetitionPerDay ?: 1.0
+
+    when {
+        state.startsWith("absolute") -> {
             bgColor = primaryColor
             textColor = if (primaryColor.luminance() > 0.5f) Color.Black else Color.White
             buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
             noteIndicatorColor = textColor
-
         }
 
-        "absoluteMore", "absoluteLess" -> {
-            bgColor = primaryColor.copy(0.7f)
+        state.startsWith("partial") -> {
+            // Variation based on progress
+            val ratio = if (goal > 0) (repetitionsOnThisDay / goal).toFloat().coerceIn(0.1f, 0.9f) else 0.5f
+            bgColor = primaryColor.copy(alpha = 0.2f + 0.5f * ratio)
             textColor = primaryColor
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             noteIndicatorColor = primaryColor
         }
 
-        "absoluteDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.8f)
-            textColor = MaterialTheme.colorScheme.onSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "partial" -> {
+        state.startsWith("failed") -> {
+            // Variation based on how much over limit
+            val overageRatio = if (goal > 0) ((repetitionsOnThisDay - goal) / goal).toFloat().coerceIn(0.1f, 1.0f) else 0.5f
+            bgColor = secondaryColor.copy(alpha = 0.3f + 0.7f * overageRatio)
+            textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-
-            bgColor = primaryColor.copy(0.3f)
-            textColor = primaryColor
-            noteIndicatorColor = primaryColor
-
-
+            noteIndicatorColor = textColor
         }
 
-        "partialDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "incompleteDisabled" -> {
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.05f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiaryContainer
-
-        }
-
-        "incomplete", "empty" -> {
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant
-            noteIndicatorColor = tertiaryColor
-
-
-        }
-
-        "skip" -> {
-            buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = tertiaryColor.copy(alpha = 0.5f)
+        state.startsWith("skip") -> {
+            bgColor = tertiaryColor.copy(alpha = 0.4f)
             textColor = tertiaryColor
+            buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
             noteIndicatorColor = tertiaryColor
-
         }
-        "notneeded" -> {
+
+        state.contains("Disabled") -> {
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.05f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+            noteIndicatorColor = Color.Transparent
+        }
+
+        else -> { // incomplete / empty
+            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            textColor = primaryColor.copy(alpha = 0.5f)
-            noteIndicatorColor = primaryColor.copy(alpha = 0.2f)
+            noteIndicatorColor = tertiaryColor
         }
-        "failed" -> {
-            bgColor = secondaryColor.copy(alpha = 0.6f)
-            textColor = secondaryColor
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = secondaryColor
-        }
-        else -> {
-            bgColor = MaterialTheme.colorScheme.error
-            noteIndicatorColor = MaterialTheme.colorScheme.onError
-
-        }
-
-
     }
 
     val modifier = if (interactive) {
         Modifier.combinedClickable(onClick = {
             buttonAction[0]()
-            println("$state This is state")
         }, onLongClick = buttonAction[1])
     } else Modifier
-
 
     Box(
         modifier
@@ -164,46 +119,35 @@ fun GridDayItem(
             Surface(
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(15.dp)
+                    .size(14.dp)
                     .padding(3.dp),
-
-                shadowElevation = 100.dp,
                 color = noteIndicatorColor
             ) {}
-
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            
-            // Show icon based on state - but NOT for negative habits showing "failed" (X doesn't make sense)
-            when (state) {
-                "notneeded" -> {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = "not needed",
-                        tint = textColor.copy(alpha = 0.5f)
-                    )
-                }
-                "skip" -> {
+            when {
+                state.startsWith("skip") -> {
                     Icon(
                         Icons.Default.DoubleArrow,
-                        contentDescription = "skipped",
-                        tint = textColor
+                        contentDescription = null,
+                        tint = textColor,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
-                "failed" -> {
-                    // Only show X for positive habits (partial) - negative habits should show color only
-                    if (habitEntity?.isNegative != true) {
-                        Text(
-                            "X",
-                            color = textColor,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                    }
+                state == "absoluteMore" -> {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = textColor,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
-                else -> {
-                    if (showDate) {
-                        Text(date.dayOfMonth.toString(), color = textColor)
-                    }
+                showDate -> {
+                    Text(
+                        text = date.dayOfMonth.toString(), 
+                        color = textColor,
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 }
             }
         }

@@ -137,17 +137,17 @@ fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: Ha
                     StatItem(
                         label = "Min",
                         value = "${minRepsOnFailed.toInt()}",
-                        color = Color(0xFFF44336)
+                        color = habitColor.copy(alpha = 0.6f)
                     )
                     StatItem(
                         label = "Max",
                         value = "${maxRepsOnFailed.toInt()}",
-                        color = Color(0xFFF44336)
+                        color = habitColor.copy(alpha = 0.9f)
                     )
                     StatItem(
                         label = "Avg",
                         value = "${String.format(Locale.US, "%.1f", avgRepsOnFailed)}",
-                        color = Color(0xFFF44336)
+                        color = habitColor.copy(alpha = 0.75f)
                     )
                 }
             }

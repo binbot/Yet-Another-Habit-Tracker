@@ -152,6 +152,7 @@ fun FullDataGridCalender(
                                 GridDayItem(
                                     hasNote = hasNote,
                                     state = dayState,
+                                    repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0,
                                     primaryColor = primaryColor,
                                     secondaryColor = secondaryColor,
                                     tertiaryColor = tertiaryColor,

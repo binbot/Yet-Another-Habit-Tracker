@@ -115,12 +115,12 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
             }
         } else {
             val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-            val palette = com.materialkolor.rememberDynamicColorScheme(
+            val palette = rememberDynamicColorScheme(
                 primary = habit.color,
                 isDark = isDark,
                 isAmoled = allPreferences.getAmoledThemeMode(),
-                specVersion = com.materialkolor.dynamiccolor.ColorSpec.SpecVersion.SPEC_2025,
-                contrastLevel = com.materialkolor.Contrast.Medium.value
+                specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                contrastLevel = Contrast.Medium.value
             )
             val primaryColor = palette.primary
             val secondaryColor = palette.secondary
