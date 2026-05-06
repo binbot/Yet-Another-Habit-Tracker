@@ -107,15 +107,17 @@ private fun HabitItemsList(
             var iconComposable: (@Composable () -> Unit) = {}
             val coroutineScope = rememberCoroutineScope()
             val date = LocalDate.now()
-            var bgColor = GlanceTheme.colors.error
-            var textColor = GlanceTheme.colors.onPrimary
+            val habitColor = habit.color
+            var bgColor = GlanceTheme.colors.surfaceVariant
+            var textColor = GlanceTheme.colors.onSurface
             var state = habitCompletionEntity?.state()
             val isLowerOrMoreThanSetFrequency =
                 (habitCompletionEntity?.repetitionsOnThisDay ?: 0.0) != habit.repetitionPerDay
 
             when (state) {
                 "partial" -> {
-                    bgColor = GlanceTheme.colors.inverseSurface
+                    bgColor = androidx.glance.unit.ColorProvider(habitColor.copy(alpha = 0.4f))
+                    textColor = androidx.glance.unit.ColorProvider(habitColor)
                     buttonAction = {
                         coroutineScope.launch {
                             habitRepository.applyRepetitionForADate(
@@ -137,7 +139,8 @@ private fun HabitItemsList(
                 }
 
                 "absolute" -> {
-                    bgColor = GlanceTheme.colors.primary
+                    bgColor = androidx.glance.unit.ColorProvider(habitColor)
+                    textColor = androidx.glance.unit.ColorProvider(if (habitColor.luminance() > 0.5f) Color.Black else Color.White)
                     buttonAction = {
                         coroutineScope.launch(Dispatchers.IO) {
                             habitRepository.setSkip(
@@ -155,12 +158,13 @@ private fun HabitItemsList(
                             colorFilter = ColorFilter.tint(textColor)
                         )
                     }} else{
-                        { Text(formatNumberToReadable( habitCompletionEntity?.repetitionsOnThisDay ?: 0.0))}
+                        { Text(formatNumberToReadable( habitCompletionEntity?.repetitionsOnThisDay ?: 0.0), style = TextStyle(color = textColor))}
                     }
                 }
 
                 "skip" -> {
                     bgColor = GlanceTheme.colors.tertiary
+                    textColor = GlanceTheme.colors.onTertiary
                     buttonAction = {
                         coroutineScope.launch(
                             Dispatchers.IO
@@ -188,28 +192,7 @@ private fun HabitItemsList(
                     }
                 }
 
-                "empty" -> {
-                    textColor = GlanceTheme.colors.onSurface
-                    bgColor = GlanceTheme.colors.surfaceVariant
-                    buttonAction = {
-                        coroutineScope.launch {
-                            habitRepository.applyRepetitionForADate(
-                                date = date,
-                                habitId = habit.id,
-                                newRepetitionValue = habit.repetitionPerDay
-                            )
-                        }
-                    }
-                    iconComposable = {
-                        Image(
-                            provider = ImageProvider(R.drawable.outline_close_24),
-                            contentDescription = "Failed",
-                            colorFilter = ColorFilter.tint(textColor)
-                        )
-                    }
-                }
-
-                else -> { // Includes null or any other state
+                else -> { // Includes empty, null or any other state
                     textColor = GlanceTheme.colors.onSurface
                     bgColor = GlanceTheme.colors.surfaceVariant
                     buttonAction = {
@@ -225,7 +208,7 @@ private fun HabitItemsList(
                         Image(
                             provider = ImageProvider(R.drawable.outline_close_24),
                             contentDescription = "Pending",
-                            colorFilter = ColorFilter.tint(textColor)
+                            colorFilter = ColorFilter.tint(textColor.copy(alpha = 0.5f))
                         )
                     }
                 }
