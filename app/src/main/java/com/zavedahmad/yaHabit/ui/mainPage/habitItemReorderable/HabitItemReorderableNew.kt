@@ -75,15 +75,6 @@ fun HabitItemReorderableNew(
     ) {
     val isArchived = habit.isArchived
     val alphaValue = if (isArchived) 0.5f else 1f
-    val titleTextColor: Color = if (isArchived) {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) // Dim color for archived
-
-
-    } else {
-
-        MaterialTheme.colorScheme.onSurface
-
-    }
 
     val coroutineScope = rememberCoroutineScope()
     val color = if (isDragging) {
@@ -218,7 +209,7 @@ fun HabitItemReorderableNew(
                         maxLines = 1,
                         overflow = TextOverflow.Companion.Ellipsis,
                         style = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = habit.color,
                             fontSize = 30.sp,
                             fontWeight = FontWeight.Companion.Bold
                         ),
@@ -252,13 +243,11 @@ fun HabitItemReorderableNew(
                             Modifier.Companion
                         }
 
-                    } {
+                    ) {
                         Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
                     }
-                    }
-
-                    }
-
+                }
+            }
             AnimatedVisibility(visible = !isReorderableMode) {
                 Column(Modifier.Companion.fillMaxWidth()) {
 
@@ -269,6 +258,7 @@ fun HabitItemReorderableNew(
                         firstDayOfWeek = firstDayOfWeek,
                         skipHabitForDate = onSkip,
                         unSkipHabit = onUnskip, habitEntity = habit,
+                        primaryColor = habit.color,
                         dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate ->
                             DialogueForHabit(
                                 isVisible = visible,

@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +48,9 @@ fun DayItem(
     date: LocalDate,
     state: String,
     repetitionsOnThisDay: Double,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     incrementHabit: () -> Unit = {},
     deleteHabit: () -> Unit = {},
     skipHabit: () -> Unit,
@@ -57,24 +61,28 @@ fun DayItem(
 ) {
     val context = LocalContext.current
     val isDialogVisible = remember { mutableStateOf(false) }
+    
+    val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
+
     var bgColor = MaterialTheme.colorScheme.error
-    var textColor = MaterialTheme.colorScheme.onError
-    var borderColor = MaterialTheme.colorScheme.primary
+    var textColor = MaterialTheme.colorScheme.onSurface
+    var borderColor = primaryColor
     var buttonAction: List<() -> Unit> = listOf({}, {})
     var icon: ImageVector? = null
     var iconComposable: (@Composable () -> Unit) = { }
-    var dateColor: Color = MaterialTheme.colorScheme.primary
+    var dateColor: Color = primaryColor
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
     val fontSizeForRepetition = listOf(13, 15)
     val formattedNumber = formatNumberToReadable(number = repetitionsOnThisDay)
     val makeToast =
         { Toast.makeText(context, "Cannot modify future data", Toast.LENGTH_SHORT).show() }
+    
     when (state) {
         "absoluteMore", "absoluteLess" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.primary
-            borderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+            bgColor = containerColor
+            textColor = onContainerColor
+            borderColor = primaryColor.copy(0.5f)
             icon = Icons.Default.Check
             iconComposable = {
                 Text(
@@ -83,32 +91,7 @@ fun DayItem(
                     color = textColor,
                     maxLines = 1,
                     fontSize = if (formattedNumber.length > 3) {
-                        fontSizeForRepetition[0]
-                            .sp
-                    } else {
-                        fontSizeForRepetition[1].sp
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
-
-        "absoluteLessDisabled", "absoluteMoreDisabled" -> {
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(0.5f)
-            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-
-
-//            iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
-            iconComposable = {
-                Text(
-                    text = formattedNumber,
-                    textAlign = TextAlign.Center,
-                    color = textColor,
-                    maxLines = 1,
-                    fontSize = if (formattedNumber.length > 3) {
-                        fontSizeForRepetition[0]
-                            .sp
+                        fontSizeForRepetition[0].sp
                     } else {
                         fontSizeForRepetition[1].sp
                     },
@@ -119,9 +102,9 @@ fun DayItem(
 
         "absolute" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.primary
-            textColor = MaterialTheme.colorScheme.onPrimary
-            borderColor = MaterialTheme.colorScheme.primary
+            bgColor = primaryColor
+            textColor = if (primaryColor.luminance() > 0.5f) Color.Black else Color.White
+            borderColor = primaryColor
             icon = Icons.Default.Check
             iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
 
@@ -130,9 +113,9 @@ fun DayItem(
 
         "partial" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
-            textColor = MaterialTheme.colorScheme.primary
-            borderColor = MaterialTheme.colorScheme.primary.copy(0.3f)
+            bgColor = containerColor.copy(alpha = 0.6f)
+            textColor = onContainerColor
+            borderColor = primaryColor.copy(0.3f)
             iconComposable = {
                 Text(
                     text = formattedNumber,
@@ -148,112 +131,14 @@ fun DayItem(
                 )
             }
 
-        }
-
-        "notneeded" -> {
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.primary.copy(0.5f)
-            borderColor = MaterialTheme.colorScheme.primary.copy(0.2f)
-            iconComposable = {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "not needed",
-                    tint = textColor.copy(alpha = 0.5f)
-                )
-            }
-        }
-
-        "notneededDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.15f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
-            borderColor = MaterialTheme.colorScheme.primary.copy(0.1f)
-            iconComposable = {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "not needed",
-                    tint = textColor.copy(alpha = 0.3f)
-                )
-            }
-        }
-
-        "absoluteDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.5f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(0.5f)
-            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            iconComposable = { Icon(Icons.Default.Check, "", tint = textColor) }
-//            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-
-        }
-
-        "partialDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.2f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
-            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            iconComposable = {
-                Text(
-                    text = formattedNumber,
-                    textAlign = TextAlign.Center,
-                    color = textColor,
-                    maxLines = 1,
-                    fontSize = if (formattedNumber.length > 3) {
-                        fontSizeForRepetition[0].sp
-                    } else {
-                        fontSizeForRepetition[1].sp
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-        }
-
-        "incompleteDisabled", "emptyDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.05f)
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.3f)
-            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.05f)
-            iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
-
-        }
-
-        "noteDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.secondaryContainer.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.7f)
-            borderColor = MaterialTheme.colorScheme.secondaryContainer.copy(0.1f)
-            iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
-        }
-
-        "failedDisabled" -> {
-            buttonAction = listOf(makeToast, makeToast)
-            bgColor = Color(0xFFF44336).copy(alpha = 0.1f)
-            textColor = Color(0xFFF44336).copy(alpha = 0.3f)
-            borderColor = Color(0xFFF44336).copy(alpha = 0.1f)
-            iconComposable = {
-                Text(
-                    text = formattedNumber,
-                    textAlign = TextAlign.Center,
-                    color = textColor,
-                    maxLines = 1,
-                    fontSize = if (formattedNumber.length > 3) {
-                        fontSizeForRepetition[0].sp
-                    } else {
-                        fontSizeForRepetition[1].sp
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
         }
 
         "incomplete", "empty" -> {
-            borderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+            borderColor = primaryColor.copy(0.3f)
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant
+            bgColor = surfaceColor
             textColor = MaterialTheme.colorScheme.onSurfaceVariant
-            iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
+            iconComposable = { Icon(Icons.Default.Close, "", tint = textColor.copy(alpha = 0.5f)) }
 
         }
 
@@ -292,6 +177,15 @@ fun DayItem(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+        
+        // Handle Disabled states with generic grey colors for performance
+        else -> {
+            buttonAction = listOf(makeToast, makeToast)
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+            borderColor = Color.Transparent
+            iconComposable = { }
         }
 
     }

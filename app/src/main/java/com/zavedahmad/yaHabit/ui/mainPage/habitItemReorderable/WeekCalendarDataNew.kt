@@ -13,8 +13,6 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.isNotNeeded
-import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.state
 
 import com.zavedahmad.yaHabit.ui.components.DaysOfWeekTitle
@@ -29,6 +27,7 @@ fun WeekCalendarDataNew(
     deleteRepetitionsForDate: (date: LocalDate) -> Unit,
     initialWeekString: String? = null,
     habitEntity: HabitEntity,
+    primaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
     skipHabitForDate: (date: LocalDate) -> Unit,
     habitData: List<HabitCompletionEntity>?,
     firstDayOfWeek: DayOfWeek,
@@ -73,85 +72,65 @@ fun WeekCalendarDataNew(
             var suffix = ""
             var hasNote = false
             var dayState = ""
-            if (habitData != null) {
-                val datesMatching = habitData.filter { it.completionDate == day.date }
-                val hasMultipleEntries = datesMatching.size > 1
-                val habitCompletionEntity = datesMatching.firstOrNull()
+            
+            val datesMatching = habitData?.filter { it.completionDate == day.date } ?: emptyList()
 
-                if (hasMultipleEntries) {
-                    dayState = "error"
-                } else if (habitCompletionEntity != null) {
-                    hasNote = habitCompletionEntity.hasNote()
-                    suffix = if (day.date > dateToday) {
-                        "Disabled"
-                    } else {
-                        ""
-                    }
-                    
-                    // Check skip state first
-                    if (habitCompletionEntity.isSkip()) {
-                        dayState = "skip"
-                    } else if (habitCompletionEntity.isNotNeeded()) {
-                        dayState = "notneeded"
-                    } else {
-                        val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
-
-                        if (habitEntity.isNegative) {
-                            dayState = if (isCompleted) "absolute" else "failed"
-                        } else {
-                            dayState = if (isCompleted) {
-                                if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
-                            } else {
-                                "partial"
-                            }
-                        }
-                    }
-
-                    dayState += suffix
+            var habitCompletionEntity: HabitCompletionEntity? = null
+            if (datesMatching.size > 1) {
+                dayState = "error"
+            } else if (datesMatching.size == 1) {
+                hasNote = datesMatching[0].hasNote()
+                habitCompletionEntity = datesMatching[0]
+                suffix = if (day.date > dateToday) {
+                    "Disabled"
                 } else {
-                    if (day.date > dateToday) {
-                        dayState = "incompleteDisabled"
-                        suffix = "Disabled"
-                    } else {
-                        dayState = "incomplete"
-                    }
-
+                    ""
                 }
 
-                DayItem(
-                    hasNote = hasNote,
-                    repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0,
-                    unSkipHabit = { unSkipHabit(day.date) },
-                    date = day.date,
-                    state = dayState,
-                    skipHabit = { skipHabitForDate(day.date) },
-                    incrementHabit = {
-                        // Cycling logic: failed/skip → delete, absolute → skip, else → increment
-                        if (dayState == "failed" || dayState == "skip") {
-                            deleteRepetitionsForDate(day.date)  // Failed/Skip → Empty
-                        } else if (dayState == "absolute" || dayState == "absoluteMore") {
-                            skipHabitForDate(day.date)  // Complete → Skip
-                        } else {
-                            incrementHabit(day.date)  // Empty/Partial → Increment
-                        }
-                    },
-                    deleteHabit = {
-                        deleteRepetitionsForDate(day.date)
-                    }, interactive = suffix != "Disabled",
-                    dialogueComposable = { visible, onDismiss ->
-                        dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
-                    })
+                val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
 
+                if (habitEntity.isNegative) {
+                    dayState = if (isCompleted) "absolute" else "failed"
+                } else {
+                    dayState = if (isCompleted) {
+                        if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                    } else {
+                        "partial"
+                    }
+                }
+
+                dayState += suffix
             } else {
-                DayItem(
-                    date = day.date,
-                    state = "incomplete",
-                    repetitionsOnThisDay = 0.0,
-                    skipHabit = {},
-                    unSkipHabit = {},
-                    dialogueComposable = { a, b -> }
-                )
+                if (day.date > dateToday) {
+                    dayState = "incompleteDisabled"
+                    suffix = "Disabled"
+                } else {
+                    dayState = if (habitEntity.isNegative) "absolute" else "incomplete"
+                }
+
             }
+
+            DayItem(
+                hasNote = hasNote,
+                primaryColor = primaryColor,
+                repetitionsOnThisDay = if (dayState != "error" && datesMatching.size > 0) {
+                    datesMatching[0].repetitionsOnThisDay
+                } else {
+                    0.0
+                }, unSkipHabit = { unSkipHabit(day.date) },
+                date = day.date,
+                state = dayState,
+                skipHabit = { skipHabitForDate(day.date) },
+                incrementHabit = {
+                    incrementHabit(day.date)
+                },
+                deleteHabit = {
+                    deleteRepetitionsForDate(day.date)
+                }, interactive = suffix != "Disabled",
+                dialogueComposable = { visible, onDismiss ->
+                    dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
+                })
+
         }, state = state)
     }
 }

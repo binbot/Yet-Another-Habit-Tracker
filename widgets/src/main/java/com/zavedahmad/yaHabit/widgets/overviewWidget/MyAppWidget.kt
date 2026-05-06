@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -208,7 +209,7 @@ private fun HabitItemsList(
                         Image(
                             provider = ImageProvider(R.drawable.outline_close_24),
                             contentDescription = "Pending",
-                            colorFilter = ColorFilter.tint(textColor.copy(alpha = 0.5f))
+                            colorFilter = ColorFilter.tint(textColor)
                         )
                     }
                 }
