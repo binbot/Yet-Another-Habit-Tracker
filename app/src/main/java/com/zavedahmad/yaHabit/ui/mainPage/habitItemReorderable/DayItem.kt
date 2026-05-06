@@ -48,11 +48,6 @@ fun DayItem(
     date: LocalDate,
     state: String,
     repetitionsOnThisDay: Double,
-    primaryColor: Color = MaterialTheme.colorScheme.primary,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-    secondaryColor: Color = MaterialTheme.colorScheme.secondary,
-    tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
     incrementHabit: () -> Unit = {},
     deleteHabit: () -> Unit = {},
     skipHabit: () -> Unit,
@@ -64,6 +59,12 @@ fun DayItem(
     val context = LocalContext.current
     val isDialogVisible = remember { mutableStateOf(false) }
     
+    // Pull the TRUE palette from the MaterialTheme (Source of Truth)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val containerColor = MaterialTheme.colorScheme.primaryContainer
+    val onContainerColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
 
     var bgColor = MaterialTheme.colorScheme.error
@@ -84,7 +85,7 @@ fun DayItem(
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = containerColor
             textColor = onContainerColor
-            borderColor = primaryColor.copy(0.5f)
+            borderColor = primaryColor.copy(alpha = 0.5f)
             icon = Icons.Default.Check
             iconComposable = {
                 Text(
@@ -117,7 +118,7 @@ fun DayItem(
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = containerColor.copy(alpha = 0.6f)
             textColor = onContainerColor
-            borderColor = primaryColor.copy(0.3f)
+            borderColor = primaryColor.copy(alpha = 0.3f)
             iconComposable = {
                 Text(
                     text = formattedNumber,
@@ -136,7 +137,7 @@ fun DayItem(
         }
 
         "incomplete", "empty" -> {
-            borderColor = primaryColor.copy(0.3f)
+            borderColor = primaryColor.copy(alpha = 0.3f)
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = surfaceColor
             textColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -184,8 +185,8 @@ fun DayItem(
         // Handle Disabled states with generic grey colors for performance
         else -> {
             buttonAction = listOf(makeToast, makeToast)
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
             borderColor = Color.Transparent
             iconComposable = { }
         }

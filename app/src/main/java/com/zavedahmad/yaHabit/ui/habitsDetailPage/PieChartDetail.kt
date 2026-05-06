@@ -15,11 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
@@ -32,10 +30,7 @@ import ir.ehsannarmani.compose_charts.models.Pie
 @Composable
 fun PieChartDetail(
     habitAllData : List<HabitCompletionEntity>?, 
-    habitEntity: HabitEntity,
-    primaryColor: Color,
-    secondaryColor: Color,
-    tertiaryColor: Color
+    habitEntity: HabitEntity
 ) {
     // For positive habits: "Perfect" = exact goal, "Extra" = exceeded, "Partial" = some but not all
     // For negative habits: "Under Limit" = success, "Over Limit" = failure
@@ -67,10 +62,11 @@ fun PieChartDetail(
         habitAllData?.count { it.isSkip() } ?: 0 
     } }
     
-    val colorSuccess = primaryColor
-    val colorOverGoal = secondaryColor
-    val colorPartial = primaryColor.copy(alpha = 0.5f)
-    val colorSkip = tertiaryColor
+    // PULL COLORS FROM THE THEME (Source of Truth)
+    val colorSuccess = MaterialTheme.colorScheme.primary
+    val colorOverGoal = MaterialTheme.colorScheme.secondary
+    val colorPartial = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val colorSkip = MaterialTheme.colorScheme.tertiary
     
     val data = remember(habitAllData) {
         derivedStateOf {

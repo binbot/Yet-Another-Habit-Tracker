@@ -49,19 +49,16 @@ import com.zavedahmad.yaHabit.R
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.utils.getAmoledThemeMode
+import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
-import com.materialkolor.rememberDynamicColorScheme
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.Contrast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import java.time.DayOfWeek
-
-
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -73,41 +70,24 @@ fun HabitItemReorderableNew(
     reorderableListScope: ReorderableCollectionItemScope? = null,
     isDragging: Boolean = false,
     isReorderableMode: Boolean = false,
+    allPreferences: List<com.zavedahmad.yaHabit.database.PreferenceEntity>,
     firstDayOfWeek: DayOfWeek,
-
-    ) {
+) {
     val isArchived = habit.isArchived
     val alphaValue = if (isArchived) 0.5f else 1f
 
     val coroutineScope = rememberCoroutineScope()
     val color = if (isDragging) {
         CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceBright)
-
     } else {
         CardDefaults.outlinedCardColors()
     }
     val cardElevation = if (isDragging) {
         CardDefaults.outlinedCardElevation(defaultElevation = 10.dp)
-
     } else {
         CardDefaults.cardElevation()
     }
     val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
-
-    // Efficiently calculate the palette colors once per habit color
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val palette = com.materialkolor.rememberDynamicColorScheme(
-        primary = habit.color,
-        isDark = isDark,
-        isAmoled = false,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
-        contrastLevel = Contrast.Medium.value
-    )
-    
-    val containerColor = palette.primaryContainer
-    val onContainerColor = palette.onPrimaryContainer
-    val secondaryColor = palette.secondary
-    val tertiaryColor = palette.tertiary
 
     val onIncrement = remember(habit.id) {
         { date: java.time.LocalDate ->
@@ -145,202 +125,176 @@ fun HabitItemReorderableNew(
         }
     }
 
-    Card(
-        modifier =
-            Modifier.Companion
+    com.zavedahmad.yaHabit.ui.theme.CustomTheme(
+        theme = allPreferences.getTheme(),
+        primaryColor = habit.color,
+        isAmoled = allPreferences.getAmoledThemeMode()
+    ) {
+        Card(
+            modifier = Modifier.Companion
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                ,
-        elevation = cardElevation,
-
-        colors = color,
-        border = BorderStroke(
-            width = LocalOutlineSizes.current.small,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
-        ),
-        onClick = {
-            if (!isReorderableMode) {
-                backStack.add(Screen.HabitDetailsPageRoute(habit.id))
+                .padding(horizontal = 10.dp),
+            elevation = cardElevation,
+            colors = color,
+            border = BorderStroke(
+                width = LocalOutlineSizes.current.small,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
+            ),
+            onClick = {
+                if (!isReorderableMode) {
+                    backStack.add(Screen.HabitDetailsPageRoute(habit.id))
+                }
             }
-        })
-    {
-        ConfirmationDialog(
-            visible = showDeleteDialog.value,
-            text = "Do you want to delete this Habit?",
-            confirmAction = { viewModel.deleteHabitById(habit.id) },
-            onDismiss = { showDeleteDialog.value = false },
-            confirmationColor = ButtonDefaults.buttonColors(
-                contentColor = MaterialTheme.colorScheme.onError,
-                containerColor = MaterialTheme.colorScheme.error
-            )
-        )
-        Column(
-            Modifier.Companion
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.Companion.Start
         ) {
-            Row(
-                modifier =
-
-                    Modifier.Companion
+            ConfirmationDialog(
+                visible = showDeleteDialog.value,
+                text = "Do you want to delete this Habit?",
+                confirmAction = { viewModel.deleteHabitById(habit.id) },
+                onDismiss = { showDeleteDialog.value = false },
+                confirmationColor = ButtonDefaults.buttonColors(
+                    contentColor = MaterialTheme.colorScheme.onError,
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            )
+            Column(
+                Modifier.Companion.fillMaxWidth(),
+                horizontalAlignment = Alignment.Companion.Start
+            ) {
+                Row(
+                    modifier = Modifier.Companion
                         .fillMaxWidth()
                         .padding(15.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            )
-            {
-
-                Row(
-                    Modifier.Companion.fillMaxWidth(0.7f),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    AnimatedVisibility(visible = isArchived) {
-                        val shape = MaterialShapes.Cookie6Sided
-                        Box(
-                            Modifier
-                                .clip(shape.toShape())
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(0.7f)
-                                ) .border(
-                                    border = BorderStroke(
-                                        width = 2.dp,
-                                        brush = SolidColor(
-                                            MaterialTheme.colorScheme.primary.copy(
-                                                0.5f
-                                            )
-                                        )
-                                    ), shape = shape.toShape()
+                    Row(
+                        Modifier.Companion.fillMaxWidth(0.7f),
+                        verticalAlignment = Alignment.Companion.CenterVertically
+                    ) {
+                        AnimatedVisibility(visible = isArchived) {
+                            val shape = MaterialShapes.Cookie6Sided
+                            Box(
+                                Modifier
+                                    .clip(shape.toShape())
+                                    .background(MaterialTheme.colorScheme.primary.copy(0.7f))
+                                    .border(
+                                        border = BorderStroke(
+                                            width = 2.dp,
+                                            brush = SolidColor(MaterialTheme.colorScheme.primary.copy(0.5f))
+                                        ), 
+                                        shape = shape.toShape()
+                                    )
+                                    .padding(5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.archive_outline),
+                                    contentDescription = "archived habit",
+                                    tint = MaterialTheme.colorScheme.onPrimary
                                 )
-                                .padding(5.dp)
-                        ) {
-                        Icon(
-
-                            painter = painterResource(R.drawable.archive_outline),
-                            contentDescription = "archived habit",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(Modifier.Companion.width(10.dp))
-}
-                    }
-                    Text(
-                        habit.name,
-
-                        maxLines = 1,
-                        overflow = TextOverflow.Companion.Ellipsis,
-                        style = TextStyle(
-                            color = habit.color,
-                            fontSize = 30.sp,
-                            fontWeight = FontWeight.Companion.Bold
-                        ),
-                        modifier = Modifier.alpha(alphaValue)
-                    )
-                    if (habit.description != "") {
-
+                                Spacer(Modifier.Companion.width(10.dp))
+                            }
+                        }
                         Text(
-                            habit.description,
-
-                            maxLines = 2,
+                            habit.name,
+                            maxLines = 1,
                             overflow = TextOverflow.Companion.Ellipsis,
                             style = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Companion.Bold
-                            )
+                            ),
+                            modifier = Modifier.alpha(alphaValue)
                         )
-
-                    }
-                }
-                if (isReorderableMode) {
-                    IconButton(
-                        onClick = {},
-                        modifier = if (reorderableListScope != null) {
-                            with(reorderableListScope) {
-                                Modifier.Companion
-                                    .draggableHandle()
-                            }
-                        } else {
-                            Modifier.Companion
+                        if (habit.description != "") {
+                            Text(
+                                habit.description,
+                                maxLines = 2,
+                                overflow = TextOverflow.Companion.Ellipsis,
+                                style = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Companion.Bold
+                                )
+                            )
                         }
-
-                    ) {
-                        Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
+                    }
+                    if (isReorderableMode) {
+                        IconButton(
+                            onClick = {},
+                            modifier = if (reorderableListScope != null) {
+                                with(reorderableListScope) {
+                                    Modifier.Companion.draggableHandle()
+                                }
+                            } else {
+                                Modifier.Companion
+                            }
+                        ) {
+                            Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
+                        }
                     }
                 }
-            }
-            AnimatedVisibility(visible = !isReorderableMode) {
-                Column(Modifier.Companion.fillMaxWidth()) {
-
-                    WeekCalendarDataNew(
-                        incrementHabit = onIncrement,
-                        deleteRepetitionsForDate = onDeleteRepetitions,
-                        habitData = habitCompletions,
-                        firstDayOfWeek = firstDayOfWeek,
-                        skipHabitForDate = onSkip,
-                        unSkipHabit = onUnskip, habitEntity = habit,
-                        primaryColor = habit.color,
-                        containerColor = containerColor,
-                        onContainerColor = onContainerColor,
-                        secondaryColor = secondaryColor,
-                        tertiaryColor = tertiaryColor,
-                        dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate ->
-                            DialogueForHabit(
-                                isVisible = visible,
-                                onDismissRequest = { onDismiss() },
-                                habitCompletionEntity = habitCompletionEntity,
-                                updateHabitCompletionEntity = { habitCompletionEntity ->
-
-                                },
-                                habitEntity = habit,
-                                onFinalised = { isRepetitionsChanged, isNotesChanged, userTypedRepetition, userTypedNote ->
-                                    if (isRepetitionsChanged && userTypedRepetition.toDoubleOrNull() != null) {
-                                        coroutineScope.launch(Dispatchers.IO) {
-                                            viewModel.habitRepository.applyRepetitionForADate(
-                                                date = completionDate,
-                                                habitId = habit.id,
-                                                newRepetitionValue = userTypedRepetition.toDouble()
-                                            )
-                                            if (isNotesChanged) {
-                                                viewModel.habitRepository.applyNotes(
-                                                    date = completionDate,
-                                                    habitId = habit.id,
-                                                    newNote = userTypedNote
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        if (isNotesChanged) {
+                AnimatedVisibility(visible = !isReorderableMode) {
+                    Column(Modifier.Companion.fillMaxWidth()) {
+                        WeekCalendarDataNew(
+                            incrementHabit = onIncrement,
+                            deleteRepetitionsForDate = onDeleteRepetitions,
+                            habitData = habitCompletions,
+                            firstDayOfWeek = firstDayOfWeek,
+                            skipHabitForDate = onSkip,
+                            unSkipHabit = onUnskip, 
+                            habitEntity = habit,
+                            dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate ->
+                                DialogueForHabit(
+                                    isVisible = visible,
+                                    onDismissRequest = { onDismiss() },
+                                    habitCompletionEntity = habitCompletionEntity,
+                                    updateHabitCompletionEntity = { },
+                                    habitEntity = habit,
+                                    onFinalised = { isRepetitionsChanged, isNotesChanged, userTypedRepetition, userTypedNote ->
+                                        if (isRepetitionsChanged && userTypedRepetition.toDoubleOrNull() != null) {
                                             coroutineScope.launch(Dispatchers.IO) {
-                                                viewModel.habitRepository.applyNotes(
+                                                viewModel.habitRepository.applyRepetitionForADate(
                                                     date = completionDate,
                                                     habitId = habit.id,
-                                                    newNote = userTypedNote
+                                                    newRepetitionValue = userTypedRepetition.toDouble()
                                                 )
+                                                if (isNotesChanged) {
+                                                    viewModel.habitRepository.applyNotes(
+                                                        date = completionDate,
+                                                        habitId = habit.id,
+                                                        newNote = userTypedNote
+                                                    )
+                                                }
                                             }
-
+                                        } else {
+                                            if (isNotesChanged) {
+                                                coroutineScope.launch(Dispatchers.IO) {
+                                                    viewModel.habitRepository.applyNotes(
+                                                        date = completionDate,
+                                                        habitId = habit.id,
+                                                        newNote = userTypedNote
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
-                                }
-                            )
-                        }
-                    )
+                                )
+                            }
+                        )
 
+                        Spacer(Modifier.Companion.height(20.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
 
-                    Spacer(Modifier.Companion.height(20.dp))
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
-
-                    Column(
-                        Modifier.Companion
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.Companion.Start
-                    ) {
-
-                        Row(
-                            modifier = Modifier.Companion.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Column(
+                            Modifier.Companion.fillMaxWidth(),
+                            horizontalAlignment = Alignment.Companion.Start
                         ) {
-                            Column { }
-
-                            HabitActionsDialogue(habit, viewModel, backStack, showDeleteDialog)
+                            Row(
+                                modifier = Modifier.Companion.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column { }
+                                HabitActionsDialogue(habit, viewModel, backStack, showDeleteDialog)
+                            }
                         }
                     }
                 }

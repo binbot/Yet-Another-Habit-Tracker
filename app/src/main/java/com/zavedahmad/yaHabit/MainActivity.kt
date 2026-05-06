@@ -152,6 +152,7 @@ class MainActivity : ComponentActivity() {
                                                         backStack,
                                                         viewModelMainPage
                                                     )
+
                                                 }
                                             }
                                         }

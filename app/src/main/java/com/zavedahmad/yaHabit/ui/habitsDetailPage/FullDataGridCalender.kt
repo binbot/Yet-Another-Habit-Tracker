@@ -1,15 +1,7 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +21,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.state
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -45,9 +39,6 @@ fun FullDataGridCalender(
     skipHabit: (date: LocalDate) -> Unit,
     unSkipHabit: (date: LocalDate) -> Unit,
     habitEntity: HabitEntity? = null,
-    primaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-    secondaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.secondary,
-    tertiaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.tertiary,
     dialogueComposable: @Composable (Boolean, () -> Unit, HabitCompletionEntity?, LocalDate) -> Unit
 ) {
     val currentMonth = remember { YearMonth.now() }
@@ -98,14 +89,14 @@ fun FullDataGridCalender(
                             Modifier.height((gridHeight / 8).dp),
                             verticalArrangement = Arrangement.Bottom
                         ) {
-                            Text(text = monthName, fontSize = 15.sp, textAlign = TextAlign.Start)
+                            Text(text = monthName, fontSize = 15.sp)
                         }
                     } else if (LocalDate.now().dayOfMonth > 15) {
                         Column(
                             Modifier.height((gridHeight / 8).dp),
                             verticalArrangement = Arrangement.Bottom
                         ) {
-                            Text(text = monthName, fontSize = 15.sp, textAlign = TextAlign.Start)
+                            Text(text = monthName, fontSize = 15.sp)
                         }
                     } else {
                         Spacer(Modifier.height((gridHeight / 8).dp))
@@ -123,15 +114,19 @@ fun FullDataGridCalender(
                         habitCompletionEntity = datesMatching[0]
                         hasNote = habitCompletionEntity.hasNote()
                         
-                        val isCompleted = habitEntity?.isCompleted(habitCompletionEntity) ?: (habitCompletionEntity.repetitionsOnThisDay > 0)
+                        val isCompleted = if (habitEntity != null) {
+                            habitEntity.isCompleted(habitCompletionEntity)
+                        } else {
+                            habitCompletionEntity.repetitionsOnThisDay > 0
+                        }
 
                         if (habitEntity?.isNegative == true) {
                             dayState = if (isCompleted) "absolute" else "failed"
                         } else {
                             dayState = if (isCompleted) {
-                                if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
+                                 if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
                             } else {
-                                "partial"
+                                 "partial"
                             }
                         }
                         dayState += suffix
@@ -153,9 +148,6 @@ fun FullDataGridCalender(
                                     hasNote = hasNote,
                                     state = dayState,
                                     repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    tertiaryColor = tertiaryColor,
                                     incrementHabit = { 
                                         if (dayState == "failed" || dayState == "skip") {
                                             deleteHabit(day.date)

@@ -33,9 +33,6 @@ fun GridDayItem(
     incrementHabit: () -> Unit = {},
     date: LocalDate,
     repetitionsOnThisDay: Double = 0.0,
-    primaryColor: Color = MaterialTheme.colorScheme.primary,
-    secondaryColor: Color = MaterialTheme.colorScheme.secondary,
-    tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
     deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
     interactive: Boolean = false,
@@ -48,6 +45,12 @@ fun GridDayItem(
     val isDialogVisible = remember { mutableStateOf(false) }
     var buttonAction: List<() -> Unit> = listOf({}, {})
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
+    
+    // Pull the TRUE palette from the MaterialTheme (Source of Truth)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     
     var bgColor: Color = Color.Transparent
     var textColor: Color = Color.Transparent
@@ -64,18 +67,18 @@ fun GridDayItem(
         }
 
         state.startsWith("partial") -> {
-            // Variation based on progress
+            // Success progress intensity for positive habits
             val ratio = if (goal > 0) (repetitionsOnThisDay / goal).toFloat().coerceIn(0.1f, 0.9f) else 0.5f
-            bgColor = primaryColor.copy(alpha = 0.2f + 0.5f * ratio)
+            bgColor = primaryColor.copy(alpha = 0.2f + 0.6f * ratio)
             textColor = primaryColor
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             noteIndicatorColor = primaryColor
         }
 
         state.startsWith("failed") -> {
-            // Variation based on how much over limit
+            // Failure intensity for negative habits (staying in the theme color)
             val overageRatio = if (goal > 0) ((repetitionsOnThisDay - goal) / goal).toFloat().coerceIn(0.1f, 1.0f) else 0.5f
-            bgColor = secondaryColor.copy(alpha = 0.3f + 0.7f * overageRatio)
+            bgColor = secondaryColor.copy(alpha = 0.4f + 0.6f * overageRatio)
             textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             noteIndicatorColor = textColor
@@ -95,7 +98,7 @@ fun GridDayItem(
         }
 
         else -> { // incomplete / empty
-            bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            bgColor = surfaceColor.copy(alpha = 0.5f)
             textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             noteIndicatorColor = tertiaryColor

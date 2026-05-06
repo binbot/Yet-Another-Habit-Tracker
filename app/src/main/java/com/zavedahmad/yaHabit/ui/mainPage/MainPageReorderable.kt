@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -28,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFloatingActionButton
@@ -71,42 +73,25 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPageViewModel) {
-    val listUpdatedChannel = remember { Channel<Unit>() }
+    val listUpdatedChannel = remember { Channel<Unit>(Channel.CONFLATED) }
     val habits = viewModel.habits.collectAsStateWithLifecycle()
     val lazyListState = rememberLazyListState()
     val topAppBarState = rememberTopAppBarState()
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
     val isReorderableMode = viewModel.isReorderableMode.collectAsStateWithLifecycle()
+    
+    // Centralized data collection for performance
+    val completionsByHabit by viewModel.completionsByHabit.collectAsStateWithLifecycle()
+
     LaunchedEffect(habits.value) {
         listUpdatedChannel.trySend(Unit)
     }
     val allPreferences = viewModel.allPreferences.collectAsStateWithLifecycle().value
     val showFloatingActionButton = remember { mutableStateOf(true) }
-    val previousHeightOffsetOfTopAppBar =
-        remember { mutableStateOf(scrollBehavior.state.heightOffset) }
+
     BackHandler(enabled = isReorderableMode.value) {
         viewModel.changeReorderableMode(false)
-    }
-    LaunchedEffect(                                            // todo this can have some perfromacnce issues
-        lazyListState.lastScrolledBackward,
-        lazyListState.lastScrolledForward,
-        scrollBehavior.state.heightOffset
-    ) {
-        if (lazyListState.lastScrolledBackward && !showFloatingActionButton.value) {
-            showFloatingActionButton.value = true
-        }
-        if (lazyListState.lastScrolledForward && showFloatingActionButton.value) {
-            showFloatingActionButton.value = false
-        }
-        if (previousHeightOffsetOfTopAppBar.value != scrollBehavior.state.heightOffset) {
-            if (previousHeightOffsetOfTopAppBar.value < scrollBehavior.state.heightOffset) {
-                showFloatingActionButton.value = true
-            } else {
-                showFloatingActionButton.value = false
-            }
-            previousHeightOffsetOfTopAppBar.value = scrollBehavior.state.heightOffset
-        }
     }
 
     if (allPreferences.isEmpty()) {
@@ -118,154 +103,96 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
             )
         }
     } else {
-
-
-        Scaffold(
-            modifier = Modifier
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-
-
-            topBar = {
-                MainPageTopAppBar(
-                    viewModel = viewModel,
-                    backStack = backStack,
-                    scrollBehavior = scrollBehavior
-                )
-            },
-            floatingActionButton = {
-                AnimatedVisibility(
-                    visible = !isReorderableMode.value && showFloatingActionButton.value,
-                    enter = slideInVertically { it -> it * 30 / 20 } + fadeIn(),
-                    exit = slideOutVertically { it -> it * 30 / 20 } + fadeOut()
-                ) {
-                    MediumFloatingActionButton(
-                        onClick = { backStack.add(Screen.AddHabitPageRoute()) },
-                        modifier = Modifier
-                            .border(
-                                shape = FloatingActionButtonDefaults.shape,
-                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(
-                                    0.5f
-                                ).compositeOver(MaterialTheme.colorScheme.surface))
-                            ),
-                        shape = FloatingActionButtonDefaults.shape,
-                        containerColor = MaterialTheme.colorScheme.primary.copy(0.3f).compositeOver(
-                            MaterialTheme.colorScheme.surface),
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        elevation = FloatingActionButtonDefaults.elevation(
-                            defaultElevation = 2.dp,
-                            pressedElevation = 4.dp
-                        )
+        ComposeTemplateTheme(
+            theme = allPreferences.getTheme()
+        ) {
+            Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                topBar = {
+                    MainPageTopAppBar(
+                        viewModel = viewModel,
+                        backStack = backStack,
+                        scrollBehavior = scrollBehavior
+                    )
+                },
+                floatingActionButton = {
+                    AnimatedVisibility(
+                        visible = !isReorderableMode.value && showFloatingActionButton.value,
+                        enter = slideInVertically { it -> it * 30 / 20 } + fadeIn(),
+                        exit = slideOutVertically { it -> it * 30 / 20 } + fadeOut()
                     ) {
-                        Box(
-                            Modifier
-                                .clip(MaterialShapes.Cookie12Sided.toShape())
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(0.7f)
-                                )
+                        MediumFloatingActionButton(
+                            onClick = {
+                                backStack.add(Screen.AddHabitPageRoute(null))
+                            },
+                            modifier = Modifier
                                 .border(
-                                    border = BorderStroke(
-                                        width = 2.dp,
-                                        brush = SolidColor(
-                                            MaterialTheme.colorScheme.primary.copy(
-                                            )
-                                        )
-                                    ), shape = MaterialShapes.Cookie12Sided.toShape()
-                                )
-                                .padding(10.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                "add", modifier = Modifier.size(30.dp), tint = MaterialTheme.colorScheme.onPrimary
+                                    shape = FloatingActionButtonDefaults.shape,
+                                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(
+                                        0.5f
+                                    ).compositeOver(MaterialTheme.colorScheme.surface))
+                                ),
+                            shape = FloatingActionButtonDefaults.shape,
+                            containerColor = MaterialTheme.colorScheme.primary.copy(0.3f).compositeOver(
+                                MaterialTheme.colorScheme.surface),
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            elevation = FloatingActionButtonDefaults.elevation(
+                                defaultElevation = 2.dp,
+                                pressedElevation = 4.dp
                             )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Habit")
                         }
                     }
                 }
-            }
-        ) { innerPadding ->
-            BottomSheetForFiltersAndSorting(viewModel)
-            val currentHabits = habits.value
-            val filteredHabits by remember(allPreferences, currentHabits) {
-                derivedStateOf {
-                    filterHabitsList(
+            ) { innerPadding ->
+                val filteredHabits = remember(allPreferences, habits.value) {
+                    getSortedHabitList(
                         allPreferences.getShowArchive(),
                         allPreferences.getShowActive(),
-                        currentHabits
+                        habits.value
                     )
-
                 }
-            }
 
-
-            val reorderableLazyListState =
-                rememberReorderableLazyListState(
-                    lazyListState,
-
+                val reorderableLazyListState =
+                    rememberReorderableLazyListState(
+                        lazyListState,
                     ) { from, to ->
-                    listUpdatedChannel.tryReceive()
-                    //println("from: key ${from.key} index ${from.index}  \n to:   key ${to.key} index ${to.index}")
-                    val realFromIndex = filteredHabits[from.index - 1].index
-                    val realToIndex = filteredHabits[to.index - 1].index
-                    viewModel.move(realFromIndex, realToIndex)
-                    listUpdatedChannel.receive()
-                }
+                        listUpdatedChannel.tryReceive()
+                        val realFromIndex = filteredHabits[from.index].index
+                        val realToIndex = filteredHabits[to.index].index
+                        viewModel.move(realFromIndex, realToIndex)
+                    }
 
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-
-            ) {
-
-
-                if (filteredHabits.isEmpty()) {
-                    NoHabitsPage(Modifier.padding(innerPadding))
-                } else {
-                    Box {
-
-                        //HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    if (filteredHabits.isEmpty()) {
+                        NoHabitsPage(Modifier.padding(innerPadding))
+                    } else {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(innerPadding),
                             state = lazyListState,
-//                            contentPadding = PaddingValues(top = 1.dp, start = 10.dp, end = 10.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            item {  }  // Todo this is testing
                             items(filteredHabits, key = { it.id }) { habit ->
-                                ReorderableItem(
-                                    reorderableLazyListState,
-                                    key = habit.id
-                                ) { isDragging ->
-                                    val habitCompletions = viewModel.completionsByHabit.collectAsStateWithLifecycle().value[habit.id] ?: emptyList()
-                                    CustomTheme(
-                                        theme = allPreferences.getTheme(), // Ensure themeReal.value is not null here or provide a default
-                                        primaryColor = habit.color,
-                                        isAmoled = allPreferences.getAmoledThemeMode()
-//
-                                    ) {
-
-
-                                        // Text("id :  ${habit.id.toString()}, index: ${habit.index}")
-
-                                        HabitItemReorderableNew(
-                                            backStack = backStack,
-                                            viewModel = viewModel,
-                                            habit = habit,
-                                            habitCompletions = habitCompletions,
-                                            reorderableListScope = this,
-                                            isDragging = isDragging,
-                                            isReorderableMode = isReorderableMode.value,
-                                            firstDayOfWeek = allPreferences.getFirstDayOfWeek()
-                                        )
-
-//                                Spacer(Modifier.height(40.dp))
-
-
-                                    }
+                                ReorderableItem(reorderableLazyListState, key = habit.id) { isDragging ->
+                                    HabitItemReorderableNew(
+                                        backStack = backStack,
+                                        viewModel = viewModel,
+                                        habit = habit,
+                                        habitCompletions = completionsByHabit[habit.id] ?: emptyList(),
+                                        reorderableListScope = this,
+                                        isDragging = isDragging,
+                                        isReorderableMode = isReorderableMode.value,
+                                        allPreferences = allPreferences,
+                                        firstDayOfWeek = allPreferences.getFirstDayOfWeek()
+                                    )
                                 }
                             }
-
                             item { Spacer(Modifier.height(70.dp)) }
                         }
                     }
@@ -273,17 +200,13 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
             }
         }
     }
-
 }
 
-private fun filterHabitsList(
+fun getSortedHabitList(
     showArchived: Boolean,
     showActive: Boolean,
     habits: List<HabitEntity>
 ): List<HabitEntity> {
     return habits.filter { showArchived && it.isArchived || showActive && !it.isArchived }
         .sortedBy { it.index }
-
 }
-
-

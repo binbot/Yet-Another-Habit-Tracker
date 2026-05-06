@@ -27,11 +27,6 @@ fun WeekCalendarDataNew(
     deleteRepetitionsForDate: (date: LocalDate) -> Unit,
     initialWeekString: String? = null,
     habitEntity: HabitEntity,
-    primaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-    containerColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
-    onContainerColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer,
-    secondaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.secondary,
-    tertiaryColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.tertiary,
     skipHabitForDate: (date: LocalDate) -> Unit,
     habitData: List<HabitCompletionEntity>?,
     firstDayOfWeek: DayOfWeek,
@@ -116,11 +111,6 @@ fun WeekCalendarDataNew(
 
             DayItem(
                 hasNote = hasNote,
-                primaryColor = primaryColor,
-                containerColor = containerColor,
-                onContainerColor = onContainerColor,
-                secondaryColor = secondaryColor,
-                tertiaryColor = tertiaryColor,
                 repetitionsOnThisDay = if (dayState != "error" && datesMatching.size > 0) {
                     datesMatching[0].repetitionsOnThisDay
                 } else {

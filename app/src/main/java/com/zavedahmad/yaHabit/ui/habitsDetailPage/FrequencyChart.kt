@@ -3,7 +3,6 @@ package com.zavedahmad.yaHabit.ui.habitsDetailPage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -44,10 +43,7 @@ import java.time.YearMonth
 @Composable
 fun FrequencyChart(
     habitAllData: List<HabitCompletionEntity>?, 
-    habitEntity: HabitEntity,
-    primaryColor: Color,
-    secondaryColor: Color,
-    tertiaryColor: Color
+    habitEntity: HabitEntity
 ) {
     val yearToShow = remember { mutableStateOf(Year.now()) }
     val currentYearData by remember(habitAllData, yearToShow.value) {
@@ -67,9 +63,10 @@ fun FrequencyChart(
         }
     }
 
-    val successColor = primaryColor
-    val partialColor = primaryColor.copy(alpha = 0.5f)
-    val skipColor = tertiaryColor
+    // PULL COLORS FROM THE THEME (Source of Truth)
+    val successColor = MaterialTheme.colorScheme.primary
+    val partialColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val skipColor = MaterialTheme.colorScheme.tertiary
 
     val data by remember(currentYearData, allMonths) {
         derivedStateOf {
@@ -117,7 +114,7 @@ fun FrequencyChart(
         modifier = Modifier
             .height(250.dp)
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 8.dp),
         data = data,
         labelProperties = LabelProperties(
             enabled = true,
@@ -131,8 +128,7 @@ fun FrequencyChart(
             }
         ),
         labelHelperProperties = LabelHelperProperties(
-            enabled = true,
-            textStyle = TextStyle(fontSize = 10.sp)
+            enabled = false
         )
     )
 }
