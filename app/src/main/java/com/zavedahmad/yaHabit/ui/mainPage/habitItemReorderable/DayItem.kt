@@ -51,6 +51,8 @@ fun DayItem(
     primaryColor: Color = MaterialTheme.colorScheme.primary,
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
     onContainerColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    secondaryColor: Color = MaterialTheme.colorScheme.secondary,
+    tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
     incrementHabit: () -> Unit = {},
     deleteHabit: () -> Unit = {},
     skipHabit: () -> Unit,
@@ -143,26 +145,26 @@ fun DayItem(
         }
 
         "note" -> {
-            borderColor = MaterialTheme.colorScheme.secondary
+            borderColor = secondaryColor
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.secondaryContainer
-            textColor = MaterialTheme.colorScheme.onSecondaryContainer
+            bgColor = secondaryColor.copy(alpha = 0.2f)
+            textColor = secondaryColor
             iconComposable = { Icon(Icons.Default.Close, "", tint = textColor) }
         }
 
         "skip" -> {
-            borderColor = MaterialTheme.colorScheme.tertiary
+            borderColor = tertiaryColor
             buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.tertiaryContainer
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
+            bgColor = tertiaryColor.copy(alpha = 0.2f)
+            textColor = tertiaryColor
             iconComposable = { Icon(Icons.Default.DoubleArrow, "", tint = textColor) }
         }
 
         "failed" -> {
-            borderColor = Color(0xFFF44336)
+            borderColor = secondaryColor
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = Color(0xFFF44336).copy(alpha = 0.2f)
-            textColor = Color(0xFFF44336)
+            bgColor = secondaryColor.copy(alpha = 0.4f)
+            textColor = secondaryColor
             iconComposable = {
                 Text(
                     text = formattedNumber,

@@ -23,17 +23,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.hasNote
-import com.zavedahmad.yaHabit.database.entities.isAbsolute
 import com.zavedahmad.yaHabit.database.entities.isCompleted
 import com.zavedahmad.yaHabit.database.entities.isNotNeeded
-import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
-fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
+fun PieChartDetail(
+    habitAllData : List<HabitCompletionEntity>?, 
+    habitEntity: HabitEntity,
+    primaryColor: Color,
+    secondaryColor: Color,
+    tertiaryColor: Color
+) {
     // For positive habits: "Perfect" = exact goal, "Extra" = exceeded, "Partial" = some but not all
     // For negative habits: "Under Limit" = success, "Over Limit" = failure
     
@@ -64,11 +67,10 @@ fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: Hab
         habitAllData?.count { it.isSkip() } ?: 0 
     } }
     
-    val habitColor = habitEntity.color
-    val colorSuccess = habitColor
-    val colorOverGoal = if (habitEntity.isNegative) Color(0xFFF44336) else habitColor.copy(alpha = 0.8f)
-    val colorPartial = habitColor.copy(alpha = 0.5f)
-    val colorSkip = MaterialTheme.colorScheme.outline
+    val colorSuccess = primaryColor
+    val colorOverGoal = secondaryColor
+    val colorPartial = primaryColor.copy(alpha = 0.5f)
+    val colorSkip = tertiaryColor
     
     val data = remember(habitAllData) {
         derivedStateOf {

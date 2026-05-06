@@ -36,6 +36,9 @@ fun GridDayItem(
     state: String = "error",
     incrementHabit: () -> Unit = {},
     date: LocalDate,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
+    secondaryColor: Color = MaterialTheme.colorScheme.secondary,
+    tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
     deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
     interactive: Boolean = false,
@@ -53,18 +56,18 @@ fun GridDayItem(
     var noteIndicatorColor: Color
     when (state) {
         "absolute" -> {
-            bgColor = MaterialTheme.colorScheme.primary
-            textColor = MaterialTheme.colorScheme.onPrimary
+            bgColor = primaryColor
+            textColor = if (primaryColor.luminance() > 0.5f) Color.Black else Color.White
             buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.onPrimary
+            noteIndicatorColor = textColor
 
         }
 
         "absoluteMore", "absoluteLess" -> {
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.7f)
-            textColor = MaterialTheme.colorScheme.primary
+            bgColor = primaryColor.copy(0.7f)
+            textColor = primaryColor
             buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
+            noteIndicatorColor = primaryColor
         }
 
         "absoluteDisabled" -> {
@@ -80,9 +83,9 @@ fun GridDayItem(
         "partial" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
 
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.primary
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
+            bgColor = primaryColor.copy(0.3f)
+            textColor = primaryColor
+            noteIndicatorColor = primaryColor
 
 
         }
@@ -109,29 +112,29 @@ fun GridDayItem(
             textColor = MaterialTheme.colorScheme.onSurfaceVariant
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.surfaceVariant
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiary
+            noteIndicatorColor = tertiaryColor
 
 
         }
 
         "skip" -> {
             buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.tertiaryContainer
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
-            noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
+            bgColor = tertiaryColor.copy(alpha = 0.5f)
+            textColor = tertiaryColor
+            noteIndicatorColor = tertiaryColor
 
         }
         "notneeded" -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            textColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            noteIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            textColor = primaryColor.copy(alpha = 0.5f)
+            noteIndicatorColor = primaryColor.copy(alpha = 0.2f)
         }
         "failed" -> {
-            bgColor = Color(0xFFF44336)
-            textColor = Color.White
+            bgColor = secondaryColor.copy(alpha = 0.6f)
+            textColor = secondaryColor
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = Color.White
+            noteIndicatorColor = secondaryColor
         }
         else -> {
             bgColor = MaterialTheme.colorScheme.error

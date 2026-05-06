@@ -72,6 +72,9 @@ import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
 import com.zavedahmad.yaHabit.ui.theme.CustomTheme
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
+import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.Contrast
 import com.zavedahmad.yaHabit.ui.habitsDetailPage.StatsSummaryCard
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +114,18 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                 }
             }
         } else {
+            val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val palette = com.materialkolor.rememberDynamicColorScheme(
+                primary = habit.color,
+                isDark = isDark,
+                isAmoled = allPreferences.getAmoledThemeMode(),
+                specVersion = com.materialkolor.dynamiccolor.ColorSpec.SpecVersion.SPEC_2025,
+                contrastLevel = com.materialkolor.Contrast.Medium.value
+            )
+            val primaryColor = palette.primary
+            val secondaryColor = palette.secondary
+            val tertiaryColor = palette.tertiary
+
             CustomTheme(
                 theme = allPreferences.getTheme(),
                 primaryColor = habit.color,
@@ -264,6 +279,9 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                         }
                                     },
                                     habitEntity = habit,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    tertiaryColor = tertiaryColor,
 
                                     )
                             }
@@ -348,6 +366,9 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                     skipHabit = { },
                                     unSkipHabit = {},
                                     habitEntity = habit,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    tertiaryColor = tertiaryColor,
                                     dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate -> },
                                 )
                             }
@@ -359,12 +380,15 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
-                            FrequencyChart(habitAllData, habit)
+
+                            FrequencyChart(habitAllData, habit, primaryColor, secondaryColor, tertiaryColor)
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))
 
-                            PieChartDetail(habitAllData, habit)
+
+                            PieChartDetail(habitAllData, habit, primaryColor, secondaryColor, tertiaryColor)
+
                             Spacer(Modifier.height(20.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(20.dp))

@@ -53,6 +53,9 @@ import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
+import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.Contrast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -90,6 +93,21 @@ fun HabitItemReorderableNew(
         CardDefaults.cardElevation()
     }
     val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
+
+    // Efficiently calculate the palette colors once per habit color
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val palette = com.materialkolor.rememberDynamicColorScheme(
+        primary = habit.color,
+        isDark = isDark,
+        isAmoled = false,
+        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+        contrastLevel = Contrast.Medium.value
+    )
+    
+    val containerColor = palette.primaryContainer
+    val onContainerColor = palette.onPrimaryContainer
+    val secondaryColor = palette.secondary
+    val tertiaryColor = palette.tertiary
 
     val onIncrement = remember(habit.id) {
         { date: java.time.LocalDate ->
@@ -259,6 +277,10 @@ fun HabitItemReorderableNew(
                         skipHabitForDate = onSkip,
                         unSkipHabit = onUnskip, habitEntity = habit,
                         primaryColor = habit.color,
+                        containerColor = containerColor,
+                        onContainerColor = onContainerColor,
+                        secondaryColor = secondaryColor,
+                        tertiaryColor = tertiaryColor,
                         dialogueComposable = { visible, onDismiss, habitCompletionEntity, completionDate ->
                             DialogueForHabit(
                                 isVisible = visible,
