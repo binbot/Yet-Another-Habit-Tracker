@@ -77,22 +77,15 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
                 allMonths.map { month ->
                     val monthData = currentYearData.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() }
                     
-                    val completedCount = monthData.count { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }
-                    val overageCount = monthData.count { 
-                        !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
-                        it.isAbsolute() && !habitEntity.isCompleted(it) 
-                    }
-                    val partialCount = monthData.count { it.isPartial() && !it.isSkip() }
+                    val successCount = monthData.count { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }
+                    val partialCount = monthData.count { !habitEntity.isNegative && it.isPartial() && !it.isSkip() }
                     val skippedCount = monthData.count { it.isSkip() }
-                    val notNeededCount = monthData.count { it.isNotNeeded() }
 
                     Bars(
                         label = month.month.name.slice(0..2), values = listOf(
-                            Bars.Data(value = completedCount.toDouble(), color = SolidColor(successColor)),
-                            Bars.Data(value = overageCount.toDouble(), color = SolidColor(overageColor)),
+                            Bars.Data(value = successCount.toDouble(), color = SolidColor(successColor)),
                             Bars.Data(value = partialCount.toDouble(), color = SolidColor(partialColor)),
-                            Bars.Data(value = skippedCount.toDouble(), color = SolidColor(skipColor)),
-                            Bars.Data(value = notNeededCount.toDouble(), color = SolidColor(notNeededColor))
+                            Bars.Data(value = skippedCount.toDouble(), color = SolidColor(skipColor))
                         )
                     )
                 }

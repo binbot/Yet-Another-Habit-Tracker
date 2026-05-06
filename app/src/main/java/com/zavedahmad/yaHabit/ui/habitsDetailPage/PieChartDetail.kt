@@ -34,72 +34,73 @@ import ir.ehsannarmani.compose_charts.models.Pie
 
 @Composable
 fun PieChartDetail(habitAllData : List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    // For positive habits: "Complete" = met goal, "Partial" = some progress but not goal
-    // For negative habits: "Under Limit" = success (met goal), "Over Limit" = exceeded limit
+    // For positive habits: "Perfect" = exact goal, "Extra" = exceeded, "Partial" = some but not all
+    // For negative habits: "Under Limit" = success, "Over Limit" = failure
+    
+    val totalLoggedDays = habitAllData?.filter { !it.isSkip() && !it.isNotNeeded() } ?: emptyList()
+
     val numberOfSuccess by remember(habitAllData) { derivedStateOf { 
-        (habitAllData?.filter { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }?.size ?: 0) 
+        if (habitEntity.isNegative) {
+            totalLoggedDays.count { habitEntity.isCompleted(it) }
+        } else {
+            totalLoggedDays.count { it.repetitionsOnThisDay == habitEntity.repetitionPerDay }
+        }
     } }
     
-    // For positive habits: "Partial" = has entry but didn't meet goal (partial field = true)
-    // For negative habits: "Over Limit" should NOT be shown in "Partial" - it's a separate metric
+    val numberOfOverGoal by remember(habitAllData) { derivedStateOf { 
+        if (habitEntity.isNegative) {
+            totalLoggedDays.count { !habitEntity.isCompleted(it) } // Exceeded limit
+        } else {
+            totalLoggedDays.count { it.repetitionsOnThisDay > habitEntity.repetitionPerDay }
+        }
+    } }
+
     val numberOfPartial by remember(habitAllData) { derivedStateOf { 
-        if (habitEntity.isNegative) {
-            0 // Don't count "Over Limit" as "Partial" for negative habits
-        } else {
-            (habitAllData?.filter { it.isPartial() && !it.isSkip() }?.size ?: 0) 
-        }
-    } }
-    
-    // Over Goal/Over Limit: days where exceeded target
-    val numberOfOverLimit by remember(habitAllData) { derivedStateOf { 
-        if (habitEntity.isNegative) {
-            // Negative habit: days where did habit more than allowed (reps > goal)
-            (habitAllData?.filter { 
-                !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
-                it.isAbsolute() && !habitEntity.isCompleted(it) 
-            }?.size ?: 0)
-        } else {
-            // Positive habit: days where reps exceed goal
-            (habitAllData?.filter { 
-                !it.isSkip() && !it.isPartial() && !it.isNotNeeded() && 
-                it.isAbsolute() && !habitEntity.isCompleted(it) 
-            }?.size ?: 0)
-        }
+        if (habitEntity.isNegative) 0 
+        else totalLoggedDays.count { it.repetitionsOnThisDay > 0 && it.repetitionsOnThisDay < habitEntity.repetitionPerDay }
     } }
     
     val numberOfSkips by remember(habitAllData) { derivedStateOf { 
-        habitAllData?.filter { it.isSkip() }?.size ?: 0 
+        habitAllData?.count { it.isSkip() } ?: 0 
     } }
     
     val habitColor = habitEntity.color
     val colorSuccess = habitColor
-    val colorPartial = if (habitEntity.isNegative) Color(0xFFF44336).copy(alpha = 0.7f) else habitColor.copy(alpha = 0.5f)
-    val colorOverLimit = Color(0xFFF44336).copy(alpha = 0.75f)
+    val colorOverGoal = if (habitEntity.isNegative) Color(0xFFF44336) else habitColor.copy(alpha = 0.8f)
+    val colorPartial = habitColor.copy(alpha = 0.5f)
     val colorSkip = MaterialTheme.colorScheme.outline
     
     val data = remember(habitAllData) {
-        mutableStateOf(
-            listOf(
-                Pie(label = if (habitEntity.isNegative) "Under Limit" else "Complete", data = numberOfSuccess.toDouble(), color = colorSuccess, selectedColor = Color.Green),
-                Pie(label = if (habitEntity.isNegative) "Over Limit" else "Partial", data = numberOfPartial.toDouble(), color = colorPartial, selectedColor = Color.Red),
-                Pie(label = "Over Goal", data = numberOfOverLimit.toDouble(), color = colorOverLimit, selectedColor = Color.Yellow),
-                Pie(label = "Skipped", data = numberOfSkips.toDouble(), color = colorSkip, selectedColor = Color.Blue),
-            )
-        )
+        derivedStateOf {
+            val list = mutableListOf<Pie>()
+            if (numberOfSuccess > 0) list.add(Pie(label = if (habitEntity.isNegative) "Under Limit" else "Perfect", data = numberOfSuccess.toDouble(), color = colorSuccess, selectedColor = colorSuccess))
+            if (numberOfOverGoal > 0) list.add(Pie(label = if (habitEntity.isNegative) "Over Limit" else "Extra", data = numberOfOverGoal.toDouble(), color = colorOverGoal, selectedColor = colorOverGoal))
+            if (numberOfPartial > 0) list.add(Pie(label = "Partial", data = numberOfPartial.toDouble(), color = colorPartial, selectedColor = colorPartial))
+            if (numberOfSkips > 0) list.add(Pie(label = "Skipped", data = numberOfSkips.toDouble(), color = colorSkip, selectedColor = colorSkip))
+            list
+        }
     }
+    
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column {
-            Text(if (habitEntity.isNegative) "Under Limit: $numberOfSuccess" else "Completed: $numberOfSuccess", color = colorSuccess)
-            Text(if (habitEntity.isNegative) "Over Limit: $numberOfPartial" else "Partial: $numberOfPartial", color = colorPartial)
-            Text("Over Goal: $numberOfOverLimit", color = colorOverLimit)
+            if (habitEntity.isNegative) {
+                Text("Under Limit: $numberOfSuccess", color = colorSuccess)
+                Text("Over Limit: $numberOfOverGoal", color = colorOverGoal)
+            } else {
+                Text("Perfect: $numberOfSuccess", color = colorSuccess)
+                Text("Extra: $numberOfOverGoal", color = colorOverGoal)
+                Text("Partial: $numberOfPartial", color = colorPartial)
+            }
             Text("Skipped: $numberOfSkips", color = colorSkip)
         }
         Surface (Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)){
             Box(Modifier.padding(8.dp)){
-        PieChart(
-            modifier = Modifier.size(200.dp),
-            data = data.value,
-            style = Pie.Style.Stroke(30.dp)
-        )}}
+                PieChart(
+                    modifier = Modifier.size(200.dp),
+                    data = data.value,
+                    style = Pie.Style.Stroke(30.dp)
+                )
+            }
+        }
     }
 }
