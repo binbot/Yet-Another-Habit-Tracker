@@ -1,11 +1,17 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
@@ -20,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -63,7 +70,6 @@ fun FrequencyChart(
         }
     }
 
-    // PULL COLORS FROM THE THEME (Source of Truth)
     val successColor = MaterialTheme.colorScheme.primary
     val partialColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
     val skipColor = MaterialTheme.colorScheme.tertiary
@@ -88,47 +94,84 @@ fun FrequencyChart(
         }
     }
 
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = { yearToShow.value = yearToShow.value.minusYears(1) }) {
-            Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = "",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
-            )
-        }
-        Text(yearToShow.value.toString(), fontSize = 20.sp)
-        IconButton(onClick = { yearToShow.value = yearToShow.value.plusYears(1) }) {
-            Icon(
-                Icons.AutoMirrored.Default.ArrowForwardIos,
-                contentDescription = "",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
-            )
-        }
+    // Calculate max value for y-axis count to force integer labels
+    val maxCount = remember(data) {
+        data.flatMap { it.values }.maxOfOrNull { it.value }?.toInt() ?: 0
     }
+    // We want at most 5 indicators, but exactly maxCount if it's smaller, to force integers
+    val indicatorCount = if (maxCount <= 0) 1 else if (maxCount > 5) 5 else maxCount
 
-    ColumnChart(
-        modifier = Modifier
-            .height(250.dp)
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        data = data,
-        labelProperties = LabelProperties(
-            enabled = true,
-            textStyle = TextStyle(fontSize = 10.sp)
-        ),
-        indicatorProperties = HorizontalIndicatorProperties(
-            enabled = true,
-            textStyle = TextStyle(fontSize = 10.sp),
-            contentBuilder = { value ->
-                value.toInt().toString()
+    Column(Modifier.fillMaxWidth()) {
+        // Legend
+        Row(
+            Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LegendItem("Success", successColor)
+            Spacer(Modifier.width(16.dp))
+            if (!habitEntity.isNegative) {
+                LegendItem("Partial", partialColor)
+                Spacer(Modifier.width(16.dp))
             }
-        ),
-        labelHelperProperties = LabelHelperProperties(
-            enabled = false
+            LegendItem("Skip", skipColor)
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { yearToShow.value = yearToShow.value.minusYears(1) }) {
+                Icon(
+                    Icons.AutoMirrored.Default.ArrowBack,
+                    contentDescription = "",
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                )
+            }
+            Text(yearToShow.value.toString(), fontSize = 20.sp)
+            IconButton(onClick = { yearToShow.value = yearToShow.value.plusYears(1) }) {
+                Icon(
+                    Icons.AutoMirrored.Default.ArrowForwardIos,
+                    contentDescription = "",
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                )
+            }
+        }
+
+        ColumnChart(
+            modifier = Modifier
+                .height(250.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            data = data,
+            labelProperties = LabelProperties(
+                enabled = true,
+                textStyle = TextStyle(fontSize = 10.sp)
+            ),
+            indicatorProperties = HorizontalIndicatorProperties(
+                enabled = true,
+                textStyle = TextStyle(fontSize = 10.sp),
+                contentBuilder = { value ->
+                    value.toInt().toString()
+                }
+            ),
+            labelHelperProperties = LabelHelperProperties(
+                enabled = false
+            )
         )
-    )
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(10.dp)
+                .background(color, shape = CircleShape)
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(label, fontSize = 10.sp)
+    }
 }

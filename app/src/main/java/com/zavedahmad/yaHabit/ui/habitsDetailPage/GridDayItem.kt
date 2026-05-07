@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,9 @@ fun GridDayItem(
     incrementHabit: () -> Unit = {},
     date: LocalDate,
     repetitionsOnThisDay: Double = 0.0,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
+    secondaryColor: Color = MaterialTheme.colorScheme.secondary,
+    tertiaryColor: Color = MaterialTheme.colorScheme.tertiary,
     deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
     interactive: Boolean = false,
@@ -46,12 +48,6 @@ fun GridDayItem(
     var buttonAction: List<() -> Unit> = listOf({}, {})
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
     
-    // Pull the TRUE palette from the MaterialTheme (Source of Truth)
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
-    
     var bgColor: Color = Color.Transparent
     var textColor: Color = Color.Transparent
     var noteIndicatorColor: Color = Color.Transparent
@@ -59,29 +55,10 @@ fun GridDayItem(
     val goal = habitEntity?.repetitionPerDay ?: 1.0
 
     when {
-        state.startsWith("absolute") -> {
-            bgColor = primaryColor
-            textColor = if (primaryColor.luminance() > 0.5f) Color.Black else Color.White
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = textColor
-        }
-
-        state.startsWith("partial") -> {
-            // Success progress intensity for positive habits
-            val ratio = if (goal > 0) (repetitionsOnThisDay / goal).toFloat().coerceIn(0.1f, 0.9f) else 0.5f
-            bgColor = primaryColor.copy(alpha = 0.2f + 0.6f * ratio)
-            textColor = primaryColor
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = primaryColor
-        }
-
-        state.startsWith("failed") -> {
-            // Failure intensity for negative habits (staying in the theme color)
-            val overageRatio = if (goal > 0) ((repetitionsOnThisDay - goal) / goal).toFloat().coerceIn(0.1f, 1.0f) else 0.5f
-            bgColor = secondaryColor.copy(alpha = 0.4f + 0.6f * overageRatio)
-            textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = textColor
+        state.contains("Disabled") -> {
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.05f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+            noteIndicatorColor = Color.Transparent
         }
 
         state.startsWith("skip") -> {
@@ -91,17 +68,54 @@ fun GridDayItem(
             noteIndicatorColor = tertiaryColor
         }
 
-        state.contains("Disabled") -> {
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.05f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-            noteIndicatorColor = Color.Transparent
+        habitEntity?.isNegative == true -> {
+            // NEGATIVE HABIT: Goal is to stay UNDER the limit. 
+            // 0 reps = Level 0 (best success), > limit = Level 4 (dark failure)
+            if (repetitionsOnThisDay == 0.0) {
+                bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            } else if (repetitionsOnThisDay <= goal) {
+                // SUCCESS LEVELS: Lighter shades of habit color.
+                val ratio = (repetitionsOnThisDay / goal).toFloat()
+                if (ratio <= 0.5) {
+                    bgColor = primaryColor.copy(alpha = 0.3f) // Level 1 (Well under)
+                } else {
+                    bgColor = primaryColor.copy(alpha = 0.5f) // Level 2 (Close to limit)
+                }
+                textColor = primaryColor
+            } else {
+                // FAILURE LEVELS: Darker shades of habit color.
+                val overage = repetitionsOnThisDay - goal
+                // Cap at 2x overage for max intensity
+                val overageRatio = (overage / goal).toFloat()
+                if (overageRatio <= 1.0) {
+                    bgColor = primaryColor.copy(alpha = 0.8f) // Level 3 (Hit the limit/slightly over)
+                } else {
+                    bgColor = primaryColor.copy(alpha = 1.0f) // Level 4 (FAILED / Way over)
+                }
+                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
+            }
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            noteIndicatorColor = if (bgColor.luminance() > 0.5f) primaryColor else Color.White
         }
 
-        else -> { // incomplete / empty
-            bgColor = surfaceColor.copy(alpha = 0.5f)
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> {
+            // POSITIVE HABIT: Goal is to reach or exceed. Darker = Better.
+            if (repetitionsOnThisDay == 0.0) {
+                bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            } else {
+                val ratio = (repetitionsOnThisDay / goal).toFloat()
+                when {
+                    ratio < 0.4 -> bgColor = primaryColor.copy(alpha = 0.3f) // Level 1 (Low)
+                    ratio < 0.8 -> bgColor = primaryColor.copy(alpha = 0.6f) // Level 2 (Med)
+                    ratio < 1.0 -> bgColor = primaryColor.copy(alpha = 0.8f) // Level 3 (High)
+                    else -> bgColor = primaryColor.copy(alpha = 1.0f)        // Level 4 (Goal Met/Overage)
+                }
+                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
+            }
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = tertiaryColor
+            noteIndicatorColor = if (bgColor.luminance() > 0.5f) primaryColor else Color.White
         }
     }
 
@@ -122,36 +136,25 @@ fun GridDayItem(
             Surface(
                 shape = CircleShape,
                 modifier = Modifier
-                    .size(14.dp)
-                    .padding(3.dp),
-                color = noteIndicatorColor
+                    .size(10.dp)
+                    .padding(2.dp),
+                color = noteIndicatorColor.copy(alpha = 0.8f)
             ) {}
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            when {
-                state.startsWith("skip") -> {
-                    Icon(
-                        Icons.Default.DoubleArrow,
-                        contentDescription = null,
-                        tint = textColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                state == "absoluteMore" -> {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = textColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                showDate -> {
-                    Text(
-                        text = date.dayOfMonth.toString(), 
-                        color = textColor,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+            if (state.startsWith("skip")) {
+                Icon(
+                    Icons.Default.DoubleArrow,
+                    contentDescription = null,
+                    tint = textColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            } else if (showDate) {
+                Text(
+                    text = date.dayOfMonth.toString(), 
+                    color = textColor,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
