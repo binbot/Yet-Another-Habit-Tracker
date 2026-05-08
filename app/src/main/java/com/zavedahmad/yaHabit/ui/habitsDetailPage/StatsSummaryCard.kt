@@ -24,23 +24,18 @@ import java.util.Locale
 
 @Composable
 fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    val habitColor = habitEntity.color
     val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
     
-    // For positive habits, these are "failures". For negative habits, these are "successes".
-    // Let's call them "Target Met" and "Target Not Met" internally.
     val data = habitAllData ?: emptyList()
+    val activeDays = data.filter { !it.isSkip() }
+    val totalDaysCount = activeDays.size
     
-    val metTargetDays = data.filter { habitEntity.isCompleted(it) && !it.isSkip() }
-    val missedTargetDays = data.filter { !habitEntity.isCompleted(it) && !it.isSkip() }
-
-    val avgRepsOnMet = if (metTargetDays.isNotEmpty()) metTargetDays.map { it.repetitionsOnThisDay }.average() else 0.0
-    val maxRepsOnMet = if (metTargetDays.isNotEmpty()) metTargetDays.maxOf { it.repetitionsOnThisDay } else 0.0
-    val minRepsOnMet = if (metTargetDays.isNotEmpty()) metTargetDays.minOf { it.repetitionsOnThisDay } else 0.0
-
-    val avgRepsOnMissed = if (missedTargetDays.isNotEmpty()) missedTargetDays.map { it.repetitionsOnThisDay }.average() else 0.0
-    val maxRepsOnMissed = if (missedTargetDays.isNotEmpty()) missedTargetDays.maxOf { it.repetitionsOnThisDay } else 0.0
-    val minRepsOnMissed = if (missedTargetDays.isNotEmpty()) missedTargetDays.minOf { it.repetitionsOnThisDay } else 0.0
+    val metTargetDays = activeDays.filter { habitEntity.isCompleted(it) }
+    val missedTargetDays = activeDays.filter { !habitEntity.isCompleted(it) }
+    
+    val completionRate = if (totalDaysCount > 0) (metTargetDays.size.toDouble() / totalDaysCount.toDouble() * 100).toInt() else 0
+    val totalVolume = activeDays.sumOf { it.repetitionsOnThisDay }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -49,16 +44,30 @@ fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: Ha
         )
     ) {
         Column(Modifier.padding(16.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = "Summary Statistics",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "$completionRate% Score",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = primaryColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
             Text(
-                text = "Summary Statistics",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
+                text = "Across $totalDaysCount active days • Total volume: ${String.format(Locale.US, "%.1f", totalVolume)} ${habitEntity.measurementUnit}",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Section 1: Target Met (using full primary color)
+            // Section 1: Success (using full primary color)
             Text(
-                text = if (habitEntity.isNegative) "Under Limit (Success)" else "Goal Met (Success)",
+                text = if (habitEntity.isNegative) "Success (Under Limit)" else "Success (Goal Met)",
                 fontSize = 12.sp,
                 color = primaryColor,
                 fontWeight = FontWeight.SemiBold,
@@ -68,17 +77,18 @@ fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: Ha
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(label = "Min", value = String.format(Locale.US, "%.1f", minRepsOnMet), color = primaryColor)
-                StatItem(label = "Max", value = String.format(Locale.US, "%.1f", maxRepsOnMet), color = primaryColor)
-                StatItem(label = "Avg", value = String.format(Locale.US, "%.1f", avgRepsOnMet), color = primaryColor)
+                val metValues = metTargetDays.map { it.repetitionsOnThisDay }
+                StatItem(label = "Days", value = "${metTargetDays.size}", color = primaryColor)
+                StatItem(label = "Avg Reps", value = if (metValues.isNotEmpty()) String.format(Locale.US, "%.1f", metValues.average()) else "-", color = primaryColor)
+                StatItem(label = "Best Day", value = if (metValues.isNotEmpty()) String.format(Locale.US, "%.1f", if (habitEntity.isNegative) metValues.minOrNull() else metValues.maxOrNull()) else "-", color = primaryColor)
             }
 
-            // Section 2: Target Not Met (using secondary variation of habit color)
+            // Section 2: Partial/Failure (using secondary variation)
             if (missedTargetDays.isNotEmpty()) {
                 Text(
-                    text = if (habitEntity.isNegative) "Over Limit (Failures)" else "Incomplete (Partial)",
+                    text = if (habitEntity.isNegative) "Relapses (Over Limit)" else "Partial Progress",
                     fontSize = 12.sp,
-                    color = primaryColor.copy(alpha = 0.7f),
+                    color = secondaryColor,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
@@ -86,21 +96,10 @@ fun StatsSummaryCard(habitAllData: List<HabitCompletionEntity>?, habitEntity: Ha
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    StatItem(
-                        label = "Min",
-                        value = String.format(Locale.US, "%.1f", minRepsOnMissed),
-                        color = primaryColor.copy(alpha = 0.7f)
-                    )
-                    StatItem(
-                        label = "Max",
-                        value = String.format(Locale.US, "%.1f", maxRepsOnMissed),
-                        color = primaryColor.copy(alpha = 0.7f)
-                    )
-                    StatItem(
-                        label = "Avg",
-                        value = String.format(Locale.US, "%.1f", avgRepsOnMissed),
-                        color = primaryColor.copy(alpha = 0.7f)
-                    )
+                    val missedValues = missedTargetDays.map { it.repetitionsOnThisDay }
+                    StatItem(label = "Days", value = "${missedTargetDays.size}", color = secondaryColor)
+                    StatItem(label = "Avg Reps", value = if (missedValues.isNotEmpty()) String.format(Locale.US, "%.1f", missedValues.average()) else "-", color = secondaryColor)
+                    StatItem(label = "Worst Overage", value = if (missedValues.isNotEmpty()) String.format(Locale.US, "%.1f", missedValues.maxOrNull()) else "-", color = secondaryColor)
                 }
             }
         }
@@ -118,7 +117,7 @@ private fun StatItem(label: String, value: String, color: Color) {
         )
         Text(
             text = label,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }

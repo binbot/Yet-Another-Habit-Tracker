@@ -22,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import java.time.LocalDate
 
@@ -48,16 +50,20 @@ fun GridDayItem(
     var buttonAction: List<() -> Unit> = listOf({}, {})
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
     
-    var bgColor: Color = Color.Transparent
-    var textColor: Color = Color.Transparent
+    // HIGH CONTRAST PALETTE (No more subtle alpha blending)
+    val emptyGrey = Color(0xFFEEEEEE) // Light grey for empty days
+    val darkGrey = Color(0xFF757575)  // Darker grey for disabled/future
+    
+    var bgColor: Color = emptyGrey
+    var textColor: Color = Color.Black
     var noteIndicatorColor: Color = Color.Transparent
 
     val goal = habitEntity?.repetitionPerDay ?: 1.0
 
     when {
         state.contains("Disabled") -> {
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.05f)
-            textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+            bgColor = emptyGrey.copy(alpha = 0.5f)
+            textColor = darkGrey.copy(alpha = 0.5f)
             noteIndicatorColor = Color.Transparent
         }
 
@@ -69,30 +75,18 @@ fun GridDayItem(
         }
 
         habitEntity?.isNegative == true -> {
-            // NEGATIVE HABIT: Goal is to stay UNDER the limit. 
-            // 0 reps = Level 0 (best success), > limit = Level 4 (dark failure)
+            // NEGATIVE HABIT (e.g. Limit Coffee)
             if (repetitionsOnThisDay == 0.0) {
-                bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                bgColor = primaryColor // High success = Solid Color
+                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             } else if (repetitionsOnThisDay <= goal) {
-                // SUCCESS LEVELS: Lighter shades of habit color.
+                // Success Variation - clearly fading out as you approach the limit
                 val ratio = (repetitionsOnThisDay / goal).toFloat()
-                if (ratio <= 0.5) {
-                    bgColor = primaryColor.copy(alpha = 0.3f) // Level 1 (Well under)
-                } else {
-                    bgColor = primaryColor.copy(alpha = 0.5f) // Level 2 (Close to limit)
-                }
+                bgColor = primaryColor.copy(alpha = (1.0f - (0.7f * ratio)).coerceIn(0.1f, 1.0f))
                 textColor = primaryColor
             } else {
-                // FAILURE LEVELS: Darker shades of habit color.
-                val overage = repetitionsOnThisDay - goal
-                // Cap at 2x overage for max intensity
-                val overageRatio = (overage / goal).toFloat()
-                if (overageRatio <= 1.0) {
-                    bgColor = primaryColor.copy(alpha = 0.8f) // Level 3 (Hit the limit/slightly over)
-                } else {
-                    bgColor = primaryColor.copy(alpha = 1.0f) // Level 4 (FAILED / Way over)
-                }
+                // FAILED: Solid Dark Failure Color (Secondary theme color)
+                bgColor = secondaryColor
                 textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             }
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
@@ -100,17 +94,22 @@ fun GridDayItem(
         }
 
         else -> {
-            // POSITIVE HABIT: Goal is to reach or exceed. Darker = Better.
+            // POSITIVE HABIT (e.g. Water)
             if (repetitionsOnThisDay == 0.0) {
-                bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                bgColor = emptyGrey
+                textColor = darkGrey
             } else {
                 val ratio = (repetitionsOnThisDay / goal).toFloat()
-                when {
-                    ratio < 0.4 -> bgColor = primaryColor.copy(alpha = 0.3f) // Level 1 (Low)
-                    ratio < 0.8 -> bgColor = primaryColor.copy(alpha = 0.6f) // Level 2 (Med)
-                    ratio < 1.0 -> bgColor = primaryColor.copy(alpha = 0.8f) // Level 3 (High)
-                    else -> bgColor = primaryColor.copy(alpha = 1.0f)        // Level 4 (Goal Met/Overage)
+                // EXPLICIT COLOR BUCKETS (mHabit/GitHub style)
+                bgColor = when {
+                    ratio < 0.33 -> primaryColor.copy(alpha = 0.25f) // Level 1: Faint
+                    ratio < 0.66 -> primaryColor.copy(alpha = 0.55f) // Level 2: Medium
+                    ratio < 1.00 -> primaryColor.copy(alpha = 0.85f) // Level 3: Strong
+                    else -> primaryColor                             // Level 4: Solid (Goal Met)
+                }
+                // If exceeded, use the secondary color to make it "pop"
+                if (repetitionsOnThisDay > goal) {
+                    bgColor = secondaryColor
                 }
                 textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             }
@@ -125,10 +124,13 @@ fun GridDayItem(
         }, onLongClick = buttonAction[1])
     } else Modifier
 
+    // We use a Surface with a solid card-like background underneath to ensure 
+    // the alpha variations don't just blend into the screen background.
     Box(
         modifier
             .fillMaxSize()
-            .clip(shape = RoundedCornerShape(5.dp))
+            .clip(shape = RoundedCornerShape(4.dp))
+            .background(color = Color.White) // Solid base for contrast
             .background(color = bgColor),
         contentAlignment = Alignment.BottomEnd
     ) {
@@ -147,13 +149,14 @@ fun GridDayItem(
                     Icons.Default.DoubleArrow,
                     contentDescription = null,
                     tint = textColor,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(14.dp)
                 )
             } else if (showDate) {
                 Text(
                     text = date.dayOfMonth.toString(), 
                     color = textColor,
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp
                 )
             }
         }

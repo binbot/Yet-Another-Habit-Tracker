@@ -1,16 +1,7 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
@@ -71,7 +63,7 @@ fun FrequencyChart(
     }
 
     val successColor = MaterialTheme.colorScheme.primary
-    val partialColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val failColor = MaterialTheme.colorScheme.secondary
     val skipColor = MaterialTheme.colorScheme.tertiary
 
     val data by remember(currentYearData, allMonths) {
@@ -80,13 +72,13 @@ fun FrequencyChart(
                 val monthData = currentYearData.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() }
                 
                 val successCount = monthData.count { habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() }
-                val partialCount = monthData.count { !habitEntity.isNegative && it.isPartial() && !it.isSkip() }
+                val failCount = monthData.count { !habitEntity.isCompleted(it) && !it.isSkip() && !it.isNotNeeded() && (it.repetitionsOnThisDay > 0 || it.isPartial()) }
                 val skippedCount = monthData.count { it.isSkip() }
 
                 Bars(
                     label = month.month.name.slice(0..2), values = listOf(
                         Bars.Data(value = successCount.toDouble(), color = SolidColor(successColor)),
-                        Bars.Data(value = partialCount.toDouble(), color = SolidColor(partialColor)),
+                        Bars.Data(value = failCount.toDouble(), color = SolidColor(failColor)),
                         Bars.Data(value = skippedCount.toDouble(), color = SolidColor(skipColor))
                     )
                 )
@@ -94,27 +86,21 @@ fun FrequencyChart(
         }
     }
 
-    // Calculate max value for y-axis count to force integer labels
-    val maxCount = remember(data) {
-        data.flatMap { it.values }.maxOfOrNull { it.value }?.toInt() ?: 0
-    }
-    // We want at most 5 indicators, but exactly maxCount if it's smaller, to force integers
-    val indicatorCount = if (maxCount <= 0) 1 else if (maxCount > 5) 5 else maxCount
+    // Determine the max value to force whole-number intervals on the Y-Axis
+    val maxVal = data.flatMap { it.values }.maxOfOrNull { it.value } ?: 0.0
+    // If max is 2, and count is 2, it will show 0, 1, 2. No decimals.
+    val indicatorCount = if (maxVal <= 0.0) 2 else (maxVal.toInt() + 1).coerceAtMost(6)
 
-    Column(Modifier.fillMaxWidth()) {
-        // Legend
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        // Clear Legend
         Row(
-            Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.Center,
+            Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LegendItem("Success", successColor)
-            Spacer(Modifier.width(16.dp))
-            if (!habitEntity.isNegative) {
-                LegendItem("Partial", partialColor)
-                Spacer(Modifier.width(16.dp))
-            }
-            LegendItem("Skip", skipColor)
+            LegendItem(if (habitEntity.isNegative) "Under Limit" else "Goal Met", successColor)
+            LegendItem(if (habitEntity.isNegative) "Over Limit" else "Partial", failColor)
+            LegendItem("Skipped", skipColor)
         }
 
         Row(
@@ -123,55 +109,55 @@ fun FrequencyChart(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { yearToShow.value = yearToShow.value.minusYears(1) }) {
-                Icon(
-                    Icons.AutoMirrored.Default.ArrowBack,
-                    contentDescription = "",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
-                )
+                Icon(Icons.AutoMirrored.Default.ArrowBack, "")
             }
-            Text(yearToShow.value.toString(), fontSize = 20.sp)
+            Text(yearToShow.value.toString(), style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = { yearToShow.value = yearToShow.value.plusYears(1) }) {
-                Icon(
-                    Icons.AutoMirrored.Default.ArrowForwardIos,
-                    contentDescription = "",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
-                )
+                Icon(Icons.AutoMirrored.Default.ArrowForwardIos, "", modifier = Modifier.size(16.dp))
             }
         }
 
-        ColumnChart(
-            modifier = Modifier
-                .height(250.dp)
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            data = data,
-            labelProperties = LabelProperties(
-                enabled = true,
-                textStyle = TextStyle(fontSize = 10.sp)
-            ),
-            indicatorProperties = HorizontalIndicatorProperties(
-                enabled = true,
-                textStyle = TextStyle(fontSize = 10.sp),
-                contentBuilder = { value ->
-                    value.toInt().toString()
+        // We wrap the chart in a Row to manually provide Y-Axis labels if the library fails
+        Row(Modifier.fillMaxWidth().height(240.dp)) {
+            // Manual Y-Axis Delineation
+            Column(
+                Modifier.fillMaxHeight().padding(end = 8.dp, bottom = 24.dp), 
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.End
+            ) {
+                for (i in (indicatorCount - 1) downTo 0) {
+                    val labelValue = (maxVal * i / (indicatorCount - 1)).toInt()
+                    Text(
+                        text = labelValue.toString(),
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
                 }
-            ),
-            labelHelperProperties = LabelHelperProperties(
-                enabled = false
+            }
+
+            ColumnChart(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                data = data,
+                labelProperties = LabelProperties(
+                    enabled = true,
+                    textStyle = TextStyle(fontSize = 10.sp)
+                ),
+                indicatorProperties = HorizontalIndicatorProperties(
+                    enabled = true,
+                    textStyle = TextStyle(fontSize = 10.sp),
+                    contentBuilder = { value -> value.toInt().toString() }
+                ),
+                labelHelperProperties = LabelHelperProperties(enabled = false)
             )
-        )
+        }
     }
 }
 
 @Composable
 private fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(10.dp)
-                .background(color, shape = CircleShape)
-        )
+        Box(Modifier.size(10.dp).background(color, shape = CircleShape))
         Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 10.sp)
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
     }
 }
