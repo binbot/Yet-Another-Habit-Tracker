@@ -2,6 +2,7 @@ package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
@@ -50,87 +50,74 @@ fun GridDayItem(
     var buttonAction: List<() -> Unit> = listOf({}, {})
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
     
-    // HIGH CONTRAST PALETTE (No more subtle alpha blending)
-    val emptyGrey = Color(0xFFEEEEEE) // Light grey for empty days
-    val darkGrey = Color(0xFF757575)  // Darker grey for disabled/future
+    val isDark = isSystemInDarkTheme()
     
-    var bgColor: Color = emptyGrey
-    var textColor: Color = Color.Black
-    var noteIndicatorColor: Color = Color.Transparent
-
+    // EXTREMELY HIGH CONTRAST BUCKETS (GitHub Style)
+    // No more subtle blending. Each level has a massive, perceptible jump.
+    val emptyColor = if (isDark) Color(0xFF2C2C2C) else Color(0xFFE0E0E0)
+    var bgColor: Color = emptyColor
+    
     val goal = habitEntity?.repetitionPerDay ?: 1.0
 
     when {
         state.contains("Disabled") -> {
-            bgColor = emptyGrey.copy(alpha = 0.5f)
-            textColor = darkGrey.copy(alpha = 0.5f)
-            noteIndicatorColor = Color.Transparent
+            bgColor = emptyColor.copy(alpha = 0.3f)
         }
 
         state.startsWith("skip") -> {
-            bgColor = tertiaryColor.copy(alpha = 0.4f)
-            textColor = tertiaryColor
+            bgColor = tertiaryColor
             buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = tertiaryColor
         }
 
         habitEntity?.isNegative == true -> {
             // NEGATIVE HABIT (e.g. Limit Coffee)
             if (repetitionsOnThisDay == 0.0) {
-                bgColor = primaryColor // High success = Solid Color
-                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
+                bgColor = primaryColor // High Success = Bold Primary
             } else if (repetitionsOnThisDay <= goal) {
-                // Success Variation - clearly fading out as you approach the limit
+                // SUCCESS LEVELS: Getting lighter as we approach the limit
                 val ratio = (repetitionsOnThisDay / goal).toFloat()
-                bgColor = primaryColor.copy(alpha = (1.0f - (0.7f * ratio)).coerceIn(0.1f, 1.0f))
-                textColor = primaryColor
+                bgColor = when {
+                    ratio <= 0.4 -> primaryColor.copy(alpha = 0.6f)
+                    else -> primaryColor.copy(alpha = 0.3f)
+                }
             } else {
-                // FAILED: Solid Dark Failure Color (Secondary theme color)
+                // FAILURE: Solid Secondary Color (Very dark/high contrast)
                 bgColor = secondaryColor
-                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             }
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = if (bgColor.luminance() > 0.5f) primaryColor else Color.White
         }
 
         else -> {
             // POSITIVE HABIT (e.g. Water)
             if (repetitionsOnThisDay == 0.0) {
-                bgColor = emptyGrey
-                textColor = darkGrey
+                bgColor = emptyColor
             } else {
                 val ratio = (repetitionsOnThisDay / goal).toFloat()
-                // EXPLICIT COLOR BUCKETS (mHabit/GitHub style)
+                // EXPLICIT HIGH-CONTRAST Tiers
                 bgColor = when {
-                    ratio < 0.33 -> primaryColor.copy(alpha = 0.25f) // Level 1: Faint
-                    ratio < 0.66 -> primaryColor.copy(alpha = 0.55f) // Level 2: Medium
-                    ratio < 1.00 -> primaryColor.copy(alpha = 0.85f) // Level 3: Strong
-                    else -> primaryColor                             // Level 4: Solid (Goal Met)
+                    ratio < 0.30 -> primaryColor.copy(alpha = 0.20f) // Level 1 (Faint)
+                    ratio < 0.60 -> primaryColor.copy(alpha = 0.50f) // Level 2 (Medium)
+                    ratio < 1.00 -> primaryColor.copy(alpha = 0.80f) // Level 3 (Strong)
+                    else -> if (repetitionsOnThisDay > goal) secondaryColor else primaryColor // Level 4 (Perfect/Extra)
                 }
-                // If exceeded, use the secondary color to make it "pop"
-                if (repetitionsOnThisDay > goal) {
-                    bgColor = secondaryColor
-                }
-                textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
             }
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = if (bgColor.luminance() > 0.5f) primaryColor else Color.White
         }
     }
 
+    val textColor = if (bgColor.luminance() > 0.5f) Color.Black else Color.White
     val modifier = if (interactive) {
         Modifier.combinedClickable(onClick = {
             buttonAction[0]()
         }, onLongClick = buttonAction[1])
     } else Modifier
 
-    // We use a Surface with a solid card-like background underneath to ensure 
-    // the alpha variations don't just blend into the screen background.
+    // Wrap in a solid background Box to ensure alpha doesn't wash out
     Box(
         modifier
             .fillMaxSize()
             .clip(shape = RoundedCornerShape(4.dp))
-            .background(color = Color.White) // Solid base for contrast
+            .background(color = if (isDark) Color(0xFF121212) else Color.White)
             .background(color = bgColor),
         contentAlignment = Alignment.BottomEnd
     ) {
@@ -140,7 +127,7 @@ fun GridDayItem(
                 modifier = Modifier
                     .size(10.dp)
                     .padding(2.dp),
-                color = noteIndicatorColor.copy(alpha = 0.8f)
+                color = textColor.copy(alpha = 0.8f)
             ) {}
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

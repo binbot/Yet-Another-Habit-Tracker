@@ -86,21 +86,18 @@ fun FrequencyChart(
         }
     }
 
-    // Determine the max value to force whole-number intervals on the Y-Axis
-    val maxVal = data.flatMap { it.values }.maxOfOrNull { it.value } ?: 0.0
-    // If max is 2, and count is 2, it will show 0, 1, 2. No decimals.
-    val indicatorCount = if (maxVal <= 0.0) 2 else (maxVal.toInt() + 1).coerceAtMost(6)
-
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        // Clear Legend
+        // Legend
         Row(
             Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LegendItem(if (habitEntity.isNegative) "Under Limit" else "Goal Met", successColor)
-            LegendItem(if (habitEntity.isNegative) "Over Limit" else "Partial", failColor)
-            LegendItem("Skipped", skipColor)
+            LegendItem(if (habitEntity.isNegative) "Success" else "Goal Met", successColor)
+            Spacer(Modifier.width(12.dp))
+            LegendItem(if (habitEntity.isNegative) "Failure" else "Partial", failColor)
+            Spacer(Modifier.width(12.dp))
+            LegendItem("Skip", skipColor)
         }
 
         Row(
@@ -117,39 +114,23 @@ fun FrequencyChart(
             }
         }
 
-        // We wrap the chart in a Row to manually provide Y-Axis labels if the library fails
-        Row(Modifier.fillMaxWidth().height(240.dp)) {
-            // Manual Y-Axis Delineation
-            Column(
-                Modifier.fillMaxHeight().padding(end = 8.dp, bottom = 24.dp), 
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.End
-            ) {
-                for (i in (indicatorCount - 1) downTo 0) {
-                    val labelValue = (maxVal * i / (indicatorCount - 1)).toInt()
-                    Text(
-                        text = labelValue.toString(),
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
-
-            ColumnChart(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                data = data,
-                labelProperties = LabelProperties(
-                    enabled = true,
-                    textStyle = TextStyle(fontSize = 10.sp)
-                ),
-                indicatorProperties = HorizontalIndicatorProperties(
-                    enabled = true,
-                    textStyle = TextStyle(fontSize = 10.sp),
-                    contentBuilder = { value -> value.toInt().toString() }
-                ),
-                labelHelperProperties = LabelHelperProperties(enabled = false)
-            )
-        }
+        ColumnChart(
+            modifier = Modifier
+                .height(240.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            data = data,
+            labelProperties = LabelProperties(
+                enabled = true,
+                textStyle = TextStyle(fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface)
+            ),
+            indicatorProperties = HorizontalIndicatorProperties(
+                enabled = true,
+                textStyle = TextStyle(fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface),
+                contentBuilder = { value -> value.toInt().toString() }
+            ),
+            labelHelperProperties = LabelHelperProperties(enabled = false)
+        )
     }
 }
 
@@ -158,6 +139,6 @@ private fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).background(color, shape = CircleShape))
         Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
     }
 }
