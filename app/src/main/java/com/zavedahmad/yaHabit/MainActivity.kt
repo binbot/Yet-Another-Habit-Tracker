@@ -24,7 +24,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
-import com.zavedahmad.yaHabit.ui.TestingPage.TestingPage
 import com.zavedahmad.yaHabit.ui.aboutPage.AboutPage
 import com.zavedahmad.yaHabit.ui.aboutPage.AboutPageViewModel
 import com.zavedahmad.yaHabit.ui.addHabitPage.AddHabitPage
@@ -50,8 +49,7 @@ sealed class Screen : NavKey {
     @Serializable
     data object MainPageRoute : Screen()
 
-    @Serializable
-    data object TestingPageRoute : Screen()
+
 
     @Serializable
     data class AddHabitPageRoute(val habitId: Int? = null) : Screen()
@@ -214,12 +212,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
 
-                                        is Screen.TestingPageRoute -> {
-                                            NavEntry(key = key) {
-                                                TestingPage(backStack)
 
-                                            }
-                                        }
 
 
                                         else -> throw RuntimeException("Invalid NavKey.")

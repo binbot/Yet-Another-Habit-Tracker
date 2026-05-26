@@ -14,7 +14,6 @@ import androidx.navigation3.runtime.NavKey
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.Screen.FavouritePageRoute
 import com.zavedahmad.yaHabit.Screen.MainPageRoute
-import com.zavedahmad.yaHabit.Screen.TestingPageRoute
 
 data class ActivePageTracker(
     var homePage: Boolean,
@@ -26,16 +25,12 @@ data class ActivePageTracker(
 
 val BottomBarItems = listOf<Screen>(
     MainPageRoute,
-    TestingPageRoute,
-
     FavouritePageRoute,
 
 )
 val icons = listOf<ImageVector>(
     Icons.Outlined.Home,
-    Icons.Default.Search,
     Icons.Default.FavoriteBorder,
-
 
 )
 
