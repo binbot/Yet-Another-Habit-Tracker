@@ -13,6 +13,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.state
 
 import com.zavedahmad.yaHabit.ui.components.DaysOfWeekTitle
@@ -88,7 +89,9 @@ fun WeekCalendarDataNew(
 
                 val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
 
-                if (habitEntity.isNegative) {
+                if (habitCompletionEntity.isSkip()) {
+                    dayState = "skip"
+                } else if (habitEntity.isNegative) {
                     dayState = if (isCompleted) "absolute" else "failed"
                 } else {
                     dayState = if (isCompleted) {

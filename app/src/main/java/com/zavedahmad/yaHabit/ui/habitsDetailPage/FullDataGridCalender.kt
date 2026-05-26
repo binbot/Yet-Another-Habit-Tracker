@@ -21,6 +21,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import com.zavedahmad.yaHabit.database.entities.state
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -120,7 +121,9 @@ fun FullDataGridCalender(
                             habitCompletionEntity.repetitionsOnThisDay > 0
                         }
 
-                        if (habitEntity?.isNegative == true) {
+                        if (habitCompletionEntity.isSkip()) {
+                            dayState = "skip"
+                        } else if (habitEntity?.isNegative == true) {
                             dayState = if (isCompleted) "absolute" else "failed"
                         } else {
                             dayState = if (isCompleted) {
