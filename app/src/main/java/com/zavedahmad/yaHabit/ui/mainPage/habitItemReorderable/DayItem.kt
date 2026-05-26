@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.R
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
@@ -45,8 +46,8 @@ import java.time.LocalDate
 
 @Composable
 fun DayItem(
+    state: String = "error",
     date: LocalDate,
-    state: String,
     repetitionsOnThisDay: Double,
     incrementHabit: () -> Unit = {},
     deleteHabit: () -> Unit = {},
@@ -54,7 +55,8 @@ fun DayItem(
     unSkipHabit: () -> Unit,
     hasNote: Boolean = false,
     dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit,
-    interactive: Boolean = false
+    interactive: Boolean = false,
+    habitEntity: HabitEntity? = null
 ) {
     val context = LocalContext.current
     val isDialogVisible = remember { mutableStateOf(false) }
@@ -104,7 +106,11 @@ fun DayItem(
         }
 
         "absolute" -> {
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            val isSingleRepCycle = habitEntity != null && habitEntity.repetitionPerDay == 1.0 && !habitEntity.isNegative
+            buttonAction = listOf(
+                if (isSingleRepCycle) skipHabit else incrementHabit,
+                { isDialogVisible.value = true }
+            )
             bgColor = primaryColor
             textColor = if (primaryColor.luminance() > 0.5f) Color.Black else Color.White
             borderColor = primaryColor

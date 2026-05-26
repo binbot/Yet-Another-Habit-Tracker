@@ -130,7 +130,8 @@ fun WeekCalendarDataNew(
                 }, interactive = suffix != "Disabled",
                 dialogueComposable = { visible, onDismiss ->
                     dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
-                })
+                },
+                habitEntity = habitEntity)
 
         }, state = state)
     }
