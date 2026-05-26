@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,6 +40,7 @@ fun DialogueForHabit(
     habitCompletionEntity: HabitCompletionEntity?,
     updateHabitCompletionEntity: (HabitCompletionEntity) -> Unit,
     habitEntity: HabitEntity,
+    onSkipChanged: (Boolean) -> Unit = {},
     onFinalised: (isRepetitionsChanged: Boolean, isNotesChanged: Boolean, userTypedRepetition: String, userTypedNote: String?) -> Unit
 ) {
     if (isVisible) {
@@ -58,16 +60,18 @@ fun DialogueForHabit(
             } else {
                 false
             }
+            val isSkipState = remember { mutableStateOf(isSkip) }
             val isRepetitionsValueValid =
-                remember { derivedStateOf { repetitions.value.toDoubleOrNull() != null } }
+                remember { derivedStateOf { repetitions.value.isEmpty() || repetitions.value.toDoubleOrNull() != null } }
             val isRepetitionsValueChanged = remember {
                 derivedStateOf {
                     if (isRepetitionsValueValid.value) {
+                        val currentVal = if (repetitions.value.isEmpty()) 0.0 else repetitions.value.toDouble()
                         if (entityAlreadyExists) {
-                            repetitions.value.toDouble() != habitCompletionEntity.repetitionsOnThisDay
+                            currentVal != habitCompletionEntity.repetitionsOnThisDay
 
                         } else {
-                            repetitions.value.toDouble() > 0.0
+                            currentVal > 0.0
                         }
                     } else {
                         false
@@ -109,15 +113,39 @@ fun DialogueForHabit(
                 ) {
                     Row(
                         Modifier.Companion.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (isSkipState.value) {
+                            Button(
+                                onClick = {
+                                    isSkipState.value = false
+                                    onSkipChanged(false)
+                                    onDismissRequest()
+                                }
+                            ) {
+                                Text("Restore Day")
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    isSkipState.value = true
+                                    repetitions.value = ""
+                                    onSkipChanged(true)
+                                    onDismissRequest()
+                                }
+                            ) {
+                                Text("Skip Day")
+                            }
+                        }
                         Button(
-
+                            enabled = !isSkipState.value,
                             onClick = {
+                                val finalRepetitions = if (repetitions.value.isEmpty()) "0" else repetitions.value
                                 onFinalised(
                                     isRepetitionsValueChanged.value,
                                     isNoteValueChanged.value,
-                                    repetitions.value,
+                                    finalRepetitions,
                                     note.value
                                 )
 
@@ -127,7 +155,7 @@ fun DialogueForHabit(
                             }) { Text("Apply") }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
-                    if (!isSkip) {
+                    if (!isSkipState.value) {
 
                         OutlinedTextField(
                             shape = MaterialTheme.shapes.extraLarge,

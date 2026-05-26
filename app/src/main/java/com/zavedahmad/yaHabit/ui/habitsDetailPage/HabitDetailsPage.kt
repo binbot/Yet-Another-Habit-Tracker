@@ -255,6 +255,15 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                                             habitCompletionEntity = habitCompletionEntity,
                                             updateHabitCompletionEntity = { },
                                             habitEntity = habit,
+                                            onSkipChanged = { skipValue ->
+                                                coroutineScope.launch(Dispatchers.IO) {
+                                                    viewModel.habitRepository.setSkip(
+                                                        date = completionDate,
+                                                        habitId = habit.id,
+                                                        skipValue = skipValue
+                                                    )
+                                                }
+                                            },
                                             onFinalised = { isRepetitionsChanged, isNotesChanged, userTypedRepetition, userTypedNote ->
                                                 if (isRepetitionsChanged && userTypedRepetition.toDoubleOrNull() != null) {
                                                     coroutineScope.launch(Dispatchers.IO) {
