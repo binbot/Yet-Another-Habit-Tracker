@@ -9,12 +9,11 @@ import androidx.compose.runtime.remember
 import com.kizitonwose.calendar.compose.WeekCalendar
 import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
 import com.kizitonwose.calendar.core.daysOfWeek
+import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
-import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.isNotNeeded
-import com.zavedahmad.yaHabit.database.entities.state
+import com.zavedahmad.yaHabit.database.entities.resolveDayState
 
 import com.zavedahmad.yaHabit.ui.components.DaysOfWeekTitle
 import java.time.DayOfWeek
@@ -69,50 +68,23 @@ fun WeekCalendarDataNew(
         DaysOfWeekTitle(daysOfWeek(firstDayOfWeek = firstDayOfWeek))
         WeekCalendar(dayContent = { day ->
 
-            var suffix = ""
             var hasNote = false
-            var dayState = ""
+            var dayState: DayState
             if (habitData != null) {
                 val datesMatching = habitData.filter { it.completionDate == day.date }
                 val hasMultipleEntries = datesMatching.size > 1
                 val habitCompletionEntity = datesMatching.firstOrNull()
 
                 if (hasMultipleEntries) {
-                    dayState = "error"
-                } else if (habitCompletionEntity != null) {
-                    hasNote = habitCompletionEntity.hasNote()
-                    suffix = if (day.date > dateToday) {
-                        "Disabled"
-                    } else {
-                        ""
-                    }
-
-                    // Check for not needed first
-                    if (habitCompletionEntity.isNotNeeded()) {
-                        dayState = "notneeded"
-                    } else {
-                        val isCompleted = habitEntity.isCompleted(habitCompletionEntity)
-
-                        if (habitEntity.isNegative) {
-                            dayState = if (isCompleted) "absolute" else "failed"
-                        } else {
-                            dayState = if (isCompleted) {
-                                if (habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
-                            } else {
-                                "partial"
-                            }
-                        }
-                    }
-
-                    dayState += suffix
+                    dayState = DayState.Error
                 } else {
-                    if (day.date > dateToday) {
-                        dayState = "incompleteDisabled"
-                        suffix = "Disabled"
-                    } else {
-                        dayState = "incomplete"
-                    }
-
+                    hasNote = habitCompletionEntity?.hasNote() == true
+                    dayState = resolveDayState(
+                        habit = habitEntity,
+                        completion = habitCompletionEntity,
+                        date = day.date,
+                        today = dateToday
+                    )
                 }
 
                 DayItem(
@@ -127,7 +99,7 @@ fun WeekCalendarDataNew(
                     },
                     deleteHabit = {
                         deleteRepetitionsForDate(day.date)
-                    }, interactive = suffix != "Disabled",
+                    }, interactive = !dayState.isDisabled,
                     dialogueComposable = { visible, onDismiss ->
                         dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
                     })
@@ -135,7 +107,7 @@ fun WeekCalendarDataNew(
             } else {
                 DayItem(
                     date = day.date,
-                    state = "incomplete",
+                    state = DayState.Incomplete,
                     repetitionsOnThisDay = 0.0,
                     skipHabit = {},
                     unSkipHabit = {},

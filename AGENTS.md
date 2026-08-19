@@ -23,9 +23,9 @@ git push github master
 
 ## Branch-per-step workflow
 
-Each development step gets its own branch. Only push code that builds and
-passes a device smoke test, so pulling on another machine always yields
-working code.
+Each development step gets its own branch. The gate is strict: nothing is
+pushed to a remote until the USER has live-tested the change on the device.
+Pulling on another machine must always yield working, user-verified code.
 
 ```sh
 # 1. Branch off clean master (Codeberg is truth)
@@ -37,18 +37,20 @@ git checkout -b <step-branch>
 # 3. Build locally
 ./gradlew :app:assembleDebug
 
-# 4. Install and smoke-test on the physical device
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-
-# 5. Commit only when it builds
+# 4. Commit locally only after it builds (checkpoint for rollback)
 git add -A
 git commit -m "<message>"
 
-# 6. Push branch to BOTH remotes
+# 5. Install on the physical device
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 6. USER smoke-tests the affected screens. NO PUSH UNTIL USER APPROVES.
+
+# 7. Push branch to BOTH remotes
 git push origin <step-branch>
 git push github <step-branch>
 
-# 7. Merge to master and push master to both remotes
+# 8. Merge to master and push master to both remotes
 git checkout master && git pull origin master
 git merge <step-branch>
 git push origin master
