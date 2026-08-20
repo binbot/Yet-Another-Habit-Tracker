@@ -151,6 +151,50 @@ fun DayItem(
 
         }
 
+        DayState.NegativeCount -> {
+            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
+            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
+            textColor = MaterialTheme.colorScheme.primary
+            borderColor = MaterialTheme.colorScheme.primary.copy(0.3f)
+            iconComposable = {
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+        }
+
+        DayState.NegativeCountDisabled -> {
+            buttonAction = listOf(makeToast, makeToast)
+            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.2f)
+            textColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+            borderColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
+            iconComposable = {
+                Text(
+                    text = formattedNumber,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    maxLines = 1,
+                    fontSize = if (formattedNumber.length > 3) {
+                        fontSizeForRepetition[0].sp
+                    } else {
+                        fontSizeForRepetition[1].sp
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+        }
+
         DayState.NotNeeded -> {
             buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
             bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)

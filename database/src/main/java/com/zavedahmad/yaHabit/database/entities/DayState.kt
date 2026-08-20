@@ -21,6 +21,8 @@ enum class DayState(val stateString: String) {
     AbsoluteDisabled("absoluteDisabled"),
     AbsoluteMore("absoluteMore"),
     AbsoluteMoreDisabled("absoluteMoreDisabled"),
+    NegativeCount("negativeCount"),
+    NegativeCountDisabled("negativeCountDisabled"),
     Failed("failed"),
     FailedDisabled("failedDisabled"),
     Incomplete("incomplete"),
@@ -29,7 +31,7 @@ enum class DayState(val stateString: String) {
     val isDisabled: Boolean
         get() = this == NotNeededDisabled || this == SkipDisabled || this == PartialDisabled ||
                 this == NoteDisabled || this == AbsoluteDisabled || this == AbsoluteMoreDisabled ||
-                this == FailedDisabled || this == IncompleteDisabled
+                this == NegativeCountDisabled || this == FailedDisabled || this == IncompleteDisabled
 
     companion object {
         fun fromString(stateString: String): DayState? = entries.firstOrNull { it.stateString == stateString }
@@ -42,12 +44,12 @@ enum class DayState(val stateString: String) {
  * Order matters:
  * 1. isNotNeeded (quota already met for the cycle)
  * 2. skip
- * 3. partial (auto-filled placeholder, still needs completion)
- * 4. note-only entry
- * 5. empty/deletable entry
- * 6. completed vs not, sign-aware:
- *    - positive: met target => Absolute, over target => AbsoluteMore, under => Partial
- *    - negative (log-and-track): under or at limit => Absolute, over limit => Failed
+ * 3. note-only entry
+ * 4. sign-specific completion state:
+ *    - negative (log-and-track): no log => clean day (Absolute checkmark),
+ *      count within limit => NegativeCount (number), over limit => Failed (red)
+ *    - positive: partial placeholder => Partial, met target => Absolute,
+ *      over target => AbsoluteMore, under => Partial
  *
  * Dates in the future resolve to their disabled variant.
  */
@@ -58,24 +60,30 @@ fun resolveDayState(
     today: LocalDate
 ): DayState {
     if (completion == null) {
-        return if (date > today) DayState.IncompleteDisabled else DayState.Incomplete
+        return when {
+            date > today -> DayState.IncompleteDisabled
+            habit.isNegative -> DayState.Absolute
+            else -> DayState.Incomplete
+        }
     }
 
     val baseState = when {
         completion.isNotNeeded() -> DayState.NotNeeded
         completion.isSkip() -> DayState.Skip
-        completion.isPartial() -> DayState.Partial
         completion.isOnlyNote() -> DayState.Note
+        habit.isNegative -> when {
+            completion.repetitionsOnThisDay == 0.0 -> DayState.Absolute
+            completion.repetitionsOnThisDay <= habit.repetitionPerDay -> DayState.NegativeCount
+            else -> DayState.Failed
+        }
+        completion.isPartial() -> DayState.Partial
         completion.repetitionsOnThisDay == 0.0 -> DayState.Incomplete
         else -> {
-            val completed = habit.isCompleted(completion)
-            when {
-                habit.isNegative ->
-                    if (completed) DayState.Absolute else DayState.Failed
-                completed ->
-                    if (completion.repetitionsOnThisDay > habit.repetitionPerDay) DayState.AbsoluteMore
-                    else DayState.Absolute
-                else -> DayState.Partial
+            if (habit.isCompleted(completion)) {
+                if (completion.repetitionsOnThisDay > habit.repetitionPerDay) DayState.AbsoluteMore
+                else DayState.Absolute
+            } else {
+                DayState.Partial
             }
         }
     }
@@ -90,6 +98,7 @@ private fun DayState.disabled(): DayState = when (this) {
     DayState.Note -> DayState.NoteDisabled
     DayState.Absolute -> DayState.AbsoluteDisabled
     DayState.AbsoluteMore -> DayState.AbsoluteMoreDisabled
+    DayState.NegativeCount -> DayState.NegativeCountDisabled
     DayState.Failed -> DayState.FailedDisabled
     DayState.Incomplete -> DayState.IncompleteDisabled
     else -> this
