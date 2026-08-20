@@ -10,6 +10,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
@@ -52,6 +54,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
+import com.materialkolor.Contrast
+import com.materialkolor.dynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
@@ -62,7 +67,6 @@ import com.zavedahmad.yaHabit.database.utils.getShowArchive
 import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.ui.mainPage.habitItemReorderable.HabitItemReorderableNew
 import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
 import com.zavedahmad.yaHabit.widgets.overviewWidget.MyAppWidget
 import kotlinx.coroutines.channels.Channel
 import sh.calvin.reorderable.ReorderableItem
@@ -195,6 +199,30 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                 }
             }
 
+            val darkTheme = when (allPreferences.getTheme()) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+            // Precompute each habit's color scheme once, instead of generating a
+            // fresh materialkolor scheme inside every list item on every scroll.
+            val habitColorSchemes: Map<Int, ColorScheme> = remember(
+                filteredHabits,
+                allPreferences.getTheme(),
+                allPreferences.getAmoledThemeMode(),
+                isSystemInDarkTheme()
+            ) {
+                filteredHabits.associate { habit ->
+                    habit.id to dynamicColorScheme(
+                        primary = habit.color,
+                        isDark = darkTheme,
+                        isAmoled = allPreferences.getAmoledThemeMode(),
+                        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                        contrastLevel = Contrast.Medium.value
+                    )
+                }
+            }
+
 
             val reorderableLazyListState =
                 rememberReorderableLazyListState(
@@ -237,31 +265,23 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                                     reorderableLazyListState,
                                     key = habit.id
                                 ) { isDragging ->
-                                    val habitCompletions = viewModel.completionsByHabit.collectAsStateWithLifecycle().value[habit.id] ?: emptyList()
-                                    CustomTheme(
-                                        theme = allPreferences.getTheme(), // Ensure themeReal.value is not null here or provide a default
-                                        primaryColor = habit.color,
-                                        isAmoled = allPreferences.getAmoledThemeMode()
-//
-                                    ) {
-
-
-                                        // Text("id :  ${habit.id.toString()}, index: ${habit.index}")
-
-                                        HabitItemReorderableNew(
-                                            backStack = backStack,
-                                            viewModel = viewModel,
-                                            habit = habit,
-                                            habitCompletions = habitCompletions,
-                                            reorderableListScope = this,
-                                            isDragging = isDragging,
-                                            isReorderableMode = isReorderableMode.value,
-                                            firstDayOfWeek = allPreferences.getFirstDayOfWeek()
-                                        )
-
-//                                Spacer(Modifier.height(40.dp))
-
-
+                                    val habitCompletions by remember(habit.id) {
+                                        viewModel.habitRepository.getAllHabitCompletionsByIdFlow(habit.id)
+                                    }.collectAsStateWithLifecycle(initialValue = emptyList())
+                                    val scheme = habitColorSchemes[habit.id]
+                                    if (scheme != null) {
+                                        MaterialTheme(colorScheme = scheme) {
+                                            HabitItemReorderableNew(
+                                                backStack = backStack,
+                                                viewModel = viewModel,
+                                                habit = habit,
+                                                habitCompletions = habitCompletions.orEmpty(),
+                                                reorderableListScope = this,
+                                                isDragging = isDragging,
+                                                isReorderableMode = isReorderableMode.value,
+                                                firstDayOfWeek = allPreferences.getFirstDayOfWeek()
+                                            )
+                                        }
                                     }
                                 }
                             }

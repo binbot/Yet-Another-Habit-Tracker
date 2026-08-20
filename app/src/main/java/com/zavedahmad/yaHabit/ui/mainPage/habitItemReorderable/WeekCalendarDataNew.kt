@@ -63,6 +63,9 @@ fun WeekCalendarDataNew(
 
 
     val dateToday = LocalDate.now()
+    val habitDataByDate = remember(habitData) {
+        habitData?.groupBy { it.completionDate }
+    }
     Column {
 
         DaysOfWeekTitle(daysOfWeek(firstDayOfWeek = firstDayOfWeek))
@@ -71,7 +74,7 @@ fun WeekCalendarDataNew(
             var hasNote = false
             var dayState: DayState
             if (habitData != null) {
-                val datesMatching = habitData.filter { it.completionDate == day.date }
+                val datesMatching = habitDataByDate?.get(day.date) ?: emptyList()
                 val hasMultipleEntries = datesMatching.size > 1
                 val habitCompletionEntity = datesMatching.firstOrNull()
 
