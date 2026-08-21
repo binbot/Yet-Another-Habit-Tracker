@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.LocalDate
 
@@ -42,11 +43,19 @@ fun computeCycleMetrics(
     habitAllData: List<HabitCompletionEntity>?,
     today: LocalDate = LocalDate.now()
 ): CycleMetrics {
-    if (habitAllData == null) {
+    if (habitAllData == null || habitAllData.isEmpty()) {
         return CycleMetrics(0, 0, 0, 0, 0, 0, 0)
     }
 
-    val byDate = habitAllData.associateBy { it.completionDate }
+    // One entry per date; prefer the real log over auto-filled partial
+    // placeholders (which have reps = 0 and would read as "not met").
+    val byDate = HashMap<LocalDate, HabitCompletionEntity>()
+    for (entry in habitAllData) {
+        val existing = byDate[entry.completionDate]
+        if (existing == null || (existing.isPartial() && !entry.isPartial())) {
+            byDate[entry.completionDate] = entry
+        }
+    }
 
     var metDays = 0
     var failedDays = 0
@@ -59,12 +68,18 @@ fun computeCycleMetrics(
         }
     }
 
-    // Current streak: walk backwards from today. For negative habits every
-    // unlogged past day is clean, so this stops only at an over-limit day.
+    // Current streak: walk backwards from today. Today not being logged yet
+    // does not break a streak (grace day) - we simply start from yesterday.
+    // The walk never goes back past when tracking began. For negative habits
+    // every unlogged past day is clean, so this stops only at an over-limit day.
+    val floorDate = byDate.keys.minOrNull()?.coerceAtLeast(today.minusYears(2))
     var currentStreak = 0
-    run {
+    if (floorDate != null) {
         var checkDate = today
-        while (checkDate >= today.minusYears(2)) {
+        if (!dayIsMet(habit, byDate[checkDate])) {
+            checkDate = checkDate.minusDays(1)
+        }
+        while (!checkDate.isBefore(floorDate)) {
             if (dayIsMet(habit, byDate[checkDate])) {
                 currentStreak++
                 checkDate = checkDate.minusDays(1)
