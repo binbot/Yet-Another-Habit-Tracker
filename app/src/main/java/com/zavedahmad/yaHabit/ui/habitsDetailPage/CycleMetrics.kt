@@ -31,12 +31,24 @@ data class CycleMetrics(
     val trackedDays: Int,
     val successRate: Int,
     val currentStreak: Int,
-    val bestStreak: Int
+    val bestStreak: Int,
+    // True when streaks are counted in whole cycles (flexible schedules,
+    // e.g. 3 times per week) rather than consecutive days.
+    val cycleBased: Boolean
 )
 
 /**
  * Computes summary metrics over the habit's full completion history.
- * Negative habits treat unlogged days within [start, today] as clean.
+ *
+ * Streak semantics:
+ * - Negative habits: day-based; unlogged days are clean, streaks break only
+ *   on an over-limit day.
+ * - Positive habits with frequency < cycle ("3 of 7 days"): streaks count
+ *   consecutive met cycles. A cycle is a [HabitEntity.cycle]-day window that
+ *   contains at least [HabitEntity.frequency] met days. The still-open current
+ *   window gets grace: it does not break the streak until it closes unmet.
+ * - Positive habits with frequency >= cycle (effectively daily): day-based,
+ *   with today unlogged treated as grace rather than a break.
  */
 fun computeCycleMetrics(
     habit: HabitEntity,
@@ -44,7 +56,7 @@ fun computeCycleMetrics(
     today: LocalDate = LocalDate.now()
 ): CycleMetrics {
     if (habitAllData == null || habitAllData.isEmpty()) {
-        return CycleMetrics(0, 0, 0, 0, 0, 0, 0)
+        return CycleMetrics(0, 0, 0, 0, 0, 0, 0, false)
     }
 
     // One entry per date; prefer the real log over auto-filled partial
@@ -68,38 +80,67 @@ fun computeCycleMetrics(
         }
     }
 
-    // Current streak: walk backwards from today. Today not being logged yet
-    // does not break a streak (grace day) - we simply start from yesterday.
-    // The walk never goes back past when tracking began. For negative habits
-    // every unlogged past day is clean, so this stops only at an over-limit day.
-    val floorDate = byDate.keys.minOrNull()?.coerceAtLeast(today.minusYears(2))
-    var currentStreak = 0
-    if (floorDate != null) {
-        var checkDate = today
-        if (!dayIsMet(habit, byDate[checkDate])) {
-            checkDate = checkDate.minusDays(1)
+    val earliest = byDate.keys.minOrNull() ?: return CycleMetrics(0, 0, 0, 0, 0, 0, 0, false)
+    val floorDate = earliest.coerceAtLeast(today.minusYears(2))
+
+    val cycleBased = !habit.isNegative && habit.cycle > 0 && habit.frequency < habit.cycle
+
+    fun windowMet(windowEnd: LocalDate): Boolean {
+        var count = 0
+        var d = windowEnd.minusDays(habit.cycle - 1L)
+        while (!d.isAfter(windowEnd)) {
+            if (dayIsMet(habit, byDate[d])) count++
+            d = d.plusDays(1)
         }
+        return count >= habit.frequency
+    }
+
+    var currentStreak = 0
+    var bestStreak = 0
+
+    if (cycleBased) {
+        // Current streak in cycles, anchored at today and stepping back one
+        // full window at a time. The open current window is grace: skip it
+        // instead of breaking when it is not yet met.
+        var end = today
+        if (!windowMet(end)) end = end.minusDays(habit.cycle.toLong())
+        while (!end.isBefore(floorDate)) {
+            if (windowMet(end)) {
+                currentStreak++
+                end = end.minusDays(habit.cycle.toLong())
+            } else break
+        }
+
+        // Best streak in consecutive non-overlapping cycles anchored at the
+        // first tracked day.
+        var end2 = earliest.plusDays(habit.cycle - 1L)
+        var temp = 0
+        while (!end2.isAfter(today)) {
+            if (windowMet(end2)) {
+                temp++
+                if (temp > bestStreak) bestStreak = temp
+            } else temp = 0
+            end2 = end2.plusDays(habit.cycle.toLong())
+        }
+    } else {
+        // Day-based current streak with a grace day for unlogged todays.
+        var checkDate = today
+        if (!dayIsMet(habit, byDate[checkDate])) checkDate = checkDate.minusDays(1)
         while (!checkDate.isBefore(floorDate)) {
             if (dayIsMet(habit, byDate[checkDate])) {
                 currentStreak++
                 checkDate = checkDate.minusDays(1)
             } else break
         }
-    }
 
-    // Best streak: walk forward across the tracked window (first log .. today).
-    val earliest = byDate.keys.minOrNull()
-    var bestStreak = 0
-    if (earliest != null) {
+        // Day-based best streak across the tracked window.
         var temp = 0
         var date: LocalDate = earliest
         while (!date.isAfter(today)) {
             if (dayIsMet(habit, byDate[date])) {
                 temp++
                 if (temp > bestStreak) bestStreak = temp
-            } else {
-                temp = 0
-            }
+            } else temp = 0
             date = date.plusDays(1)
         }
     }
@@ -114,6 +155,7 @@ fun computeCycleMetrics(
         trackedDays = trackedDays,
         successRate = successRate,
         currentStreak = currentStreak,
-        bestStreak = bestStreak
+        bestStreak = bestStreak,
+        cycleBased = cycleBased
     )
 }

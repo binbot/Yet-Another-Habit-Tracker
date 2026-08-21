@@ -26,6 +26,12 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
     val metrics = computeCycleMetrics(habitEntity, habitAllData)
     val habitColor = habitEntity.color
 
+    val streakUnit = when {
+        metrics.cycleBased && habitEntity.cycle == 7 -> "Weeks"
+        metrics.cycleBased -> "Cycles"
+        else -> "Days"
+    }
+
     Column(
         Modifier.fillMaxWidth().padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -35,7 +41,7 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
             Spacer(Modifier.width(8.dp))
             Text("Current Streak: ", style = MaterialTheme.typography.titleMedium)
             Text(
-                "${metrics.currentStreak} Days",
+                "${metrics.currentStreak} $streakUnit",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -46,7 +52,7 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
             Spacer(Modifier.width(8.dp))
             Text("Best Streak: ", style = MaterialTheme.typography.titleMedium)
             Text(
-                "${metrics.bestStreak} Days",
+                "${metrics.bestStreak} $streakUnit",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -55,6 +61,8 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
         Text(
             if (habitEntity.isNegative) {
                 "Clean days: ${metrics.metDays} of ${metrics.trackedDays} (${metrics.successRate}%)"
+            } else if (metrics.cycleBased) {
+                "Quota met in ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
             } else {
                 "Met goal on ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
             },
