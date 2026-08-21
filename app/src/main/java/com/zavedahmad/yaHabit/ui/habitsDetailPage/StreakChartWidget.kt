@@ -1,97 +1,65 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
-import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
-import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isPartial
-import com.zavedahmad.yaHabit.database.entities.isSkip
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
-import androidx.compose.ui.graphics.Color
-import com.zavedahmad.yaHabit.database.entities.isCompleted
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 
 @Composable
 fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    if (habitAllData != null) {
-        val habitColor = habitEntity.color
-        val completedDates = habitAllData
-            .filter { habitEntity.isCompleted(it) }
-            .map { it.completionDate }
-            .distinct()
-            .sortedDescending()
+    val metrics = computeCycleMetrics(habitEntity, habitAllData)
+    val habitColor = habitEntity.color
 
-        var currentStreak = 0
-        if (completedDates.isNotEmpty()) {
-            var checkDate = LocalDate.now()
-            // If today isn't logged, check yesterday to see if the streak is still 'active'
-            if (!completedDates.contains(checkDate)) {
-                checkDate = checkDate.minusDays(1)
-            }
-
-            for (date in completedDates) {
-                if (completedDates.contains(checkDate)) {
-                    currentStreak++
-                    checkDate = checkDate.minusDays(1)
-                } else {
-                    break
-                }
-            }
+    Column(
+        Modifier.fillMaxWidth().padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.LocalFireDepartment, "Current Streak", tint = habitColor)
+            Spacer(Modifier.width(8.dp))
+            Text("Current Streak: ", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "${metrics.currentStreak} Days",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
-
-        // Calculate Best Streak
-        val sortedDates = completedDates.sorted()
-        var bestStreak = 0
-        var tempStreak = 0
-        var lastDate: LocalDate? = null
-
-        for (date in sortedDates) {
-            if (lastDate != null && date == lastDate.plusDays(1)) {
-                tempStreak++
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Stars, "Best Streak", tint = habitColor.copy(alpha = 0.7f))
+            Spacer(Modifier.width(8.dp))
+            Text("Best Streak: ", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "${metrics.bestStreak} Days",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            if (habitEntity.isNegative) {
+                "Clean days: ${metrics.metDays} of ${metrics.trackedDays} (${metrics.successRate}%)"
             } else {
-                tempStreak = 1
-            }
-            if (tempStreak > bestStreak) bestStreak = tempStreak
-            lastDate = date
-        }
-
-        Column(Modifier.fillMaxWidth().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocalFireDepartment, "Current Streak", tint = habitColor)
-                Spacer(Modifier.width(8.dp))
-                Text("Current Streak: ", style = MaterialTheme.typography.titleMedium)
-                Text("$currentStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Stars, "Best Streak", tint = habitColor.copy(alpha = 0.7f))
-                Spacer(Modifier.width(8.dp))
-                Text("Best Streak: ", style = MaterialTheme.typography.titleMedium)
-                Text("$bestStreak Days", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            }
-        }
+                "Met goal on ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
