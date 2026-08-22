@@ -1,16 +1,22 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
 import androidx.compose.animation.core.snap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -100,6 +107,30 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
             ),
             labelHelperProperties = LabelHelperProperties(enabled = false)
         )
+
+        Row(
+            Modifier.padding(top = 4.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .padding(end = 4.dp)
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(habitEntity.color)
+            )
+            Text(if (habitEntity.isNegative) "Clean" else "Met", fontSize = 11.sp)
+            Spacer(Modifier.width(10.dp))
+            Box(
+                Modifier
+                    .padding(end = 4.dp)
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(MissedRed.copy(alpha = 0.5f))
+            )
+            Text(if (habitEntity.isNegative) "Over limit" else "Missed", fontSize = 11.sp)
+        }
     }
 
     Row(
