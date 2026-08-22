@@ -59,12 +59,13 @@ fun StreakChartWidget(habitAllData: List<HabitCompletionEntity>?, habitEntity: H
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            if (habitEntity.isNegative) {
-                "Clean days: ${metrics.metDays} of ${metrics.trackedDays} (${metrics.successRate}%)"
-            } else if (metrics.cycleBased) {
-                "Quota met in ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
-            } else {
-                "Met goal on ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
+            when {
+                habitEntity.isNegative ->
+                    "Clean days: ${metrics.metDays} of ${metrics.trackedDays} (${metrics.successRate}%)"
+                metrics.strictSchedule ->
+                    "Met goal on ${metrics.metDays} of ${metrics.trackedDays} days (${metrics.successRate}%)"
+                else ->
+                    "Hit target on ${metrics.metDays} of ${metrics.trackedDays} logged days (${metrics.successRate}%)"
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant

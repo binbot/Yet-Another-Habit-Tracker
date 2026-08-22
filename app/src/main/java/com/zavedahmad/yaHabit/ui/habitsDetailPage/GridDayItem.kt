@@ -1,6 +1,5 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
-import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -9,9 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,126 +21,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
-import kotlin.collections.List
 
-// Done implement note also
+/**
+ * Plain heat cell: the calendar computes the shade, this just draws it.
+ */
 @Composable
 fun GridDayItem(
-    state: String = "error",
-    incrementHabit: () -> Unit = {},
+    bg: Color,
     date: LocalDate,
-    deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
     interactive: Boolean = false,
-    skipHabit: () -> Unit,
     hasNote: Boolean = false,
-    unSkipHabit: () -> Unit,
+    isSkipCell: Boolean = false,
+    incrementHabit: () -> Unit = {},
+    unSkipHabit: () -> Unit = {},
     dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit
 ) {
     val isDialogVisible = remember { mutableStateOf(false) }
-    var buttonAction: List<() -> Unit> = listOf({}, {})
-    var textColor = MaterialTheme.colorScheme.onError
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
-    var bgColor: Color
-    var noteIndicatorColor: Color
-    when (state) {
-        "absolute" -> {
-            bgColor = MaterialTheme.colorScheme.primary
-            textColor = MaterialTheme.colorScheme.onPrimary
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.onPrimary
 
-        }
-
-        "absoluteMore", "absoluteLess" -> {
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.7f)
-            textColor = MaterialTheme.colorScheme.primary
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
-        }
-
-        "absoluteDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.8f)
-            textColor = MaterialTheme.colorScheme.onSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "partial" -> {
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.primary
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
-
-
-        }
-
-        "partialDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "incompleteDisabled" -> {
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.05f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiaryContainer
-
-        }
-
-        "incomplete", "empty" -> {
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiary
-
-
-        }
-
-        "skip" -> {
-            buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.tertiaryContainer
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
-            noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
-
-        }
-        "failed" -> {
-            bgColor = Color(0xFFF44336)
-            textColor = Color.White
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = Color.White
-        }
-        else -> {
-            bgColor = MaterialTheme.colorScheme.error
-            noteIndicatorColor = MaterialTheme.colorScheme.onError
-
-        }
-
-
-    }
+    val textColor = if (bg.luminance() > 0.5f) Color(0xFF1C1B1F) else Color.White
 
     val modifier = if (interactive) {
-        Modifier.combinedClickable(onClick = {
-            buttonAction[0]()
-            println("$state This is state")
-        }, onLongClick = buttonAction[1])
+        Modifier.combinedClickable(
+            onClick = if (isSkipCell) unSkipHabit else incrementHabit,
+            onLongClick = { isDialogVisible.value = true }
+        )
     } else Modifier
-
 
     Box(
         modifier
             .fillMaxSize()
             .clip(shape = RoundedCornerShape(5.dp))
-            .background(color = bgColor),
+            .background(color = bg),
         contentAlignment = Alignment.BottomEnd
     ) {
         if (hasNote && interactive) {
@@ -153,14 +62,12 @@ fun GridDayItem(
                 modifier = Modifier
                     .size(15.dp)
                     .padding(3.dp),
-
                 shadowElevation = 100.dp,
-                color = noteIndicatorColor
+                color = if (bg.luminance() > 0.5f) MaterialTheme.colorScheme.tertiary
+                else MaterialTheme.colorScheme.tertiaryContainer
             ) {}
-
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-
             if (showDate) {
                 Text(date.dayOfMonth.toString(), color = textColor)
             }

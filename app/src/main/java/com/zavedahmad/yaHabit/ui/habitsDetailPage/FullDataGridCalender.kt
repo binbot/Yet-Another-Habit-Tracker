@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,8 +26,7 @@ import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
-import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.state
+import com.zavedahmad.yaHabit.database.entities.isPartial
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -34,7 +34,6 @@ import java.time.YearMonth
 @Composable
 fun FullDataGridCalender(
     incrementHabit: (date: LocalDate) -> Unit = {},
-
     deleteHabit: (date: LocalDate) -> Unit = {},
     initialMonthString: String? = null,
     habitData: List<HabitCompletionEntity>? = null, gridHeight: Int = 190,
@@ -47,17 +46,9 @@ fun FullDataGridCalender(
     dialogueComposable: @Composable (Boolean, () -> Unit, HabitCompletionEntity?, LocalDate) -> Unit
 ) {
     val currentMonth = remember { YearMonth.now() }
-//    val habitDataSorted = habitData.sortedBy { it.completionDate }
-
-
     val startMonth = currentMonth.minusMonths(12)
-    // Adjust as needed
-
-    val endMonth = remember { currentMonth.plusMonths(100) } // Adjust as needed
-    // Available from the library
+    val endMonth = remember { currentMonth.plusMonths(100) }
     val dateToday = LocalDate.now()
-    // CHANGE this to change grid height
-
 
     val calendarState = rememberHeatMapCalendarState(
         startMonth = startMonth,
@@ -74,30 +65,34 @@ fun FullDataGridCalender(
             calendarState.endMonth = YearMonth.now()
         }
     }
-if (habitData == null){}
-else{
+
+    // One entry per date; prefer the real log over auto-filled placeholders.
+    val byDate = remember(habitData) {
+        val result = HashMap<LocalDate, HabitCompletionEntity>()
+        habitData?.forEach { entry ->
+            val existing = result[entry.completionDate]
+            if (existing == null || (existing.isPartial() && !entry.isPartial())) {
+                result[entry.completionDate] = entry
+            }
+        }
+        result
+    }
+
+    if (habitData == null || habitEntity == null) return
+
     Column {
-        //Text("first visible Month ${calendarState.firstVisibleMonth.yearMonth} \n last visibleMonth: ${calendarState.lastVisibleMonth.yearMonth} \n startMonth ${calendarState.startMonth} \n endMonth ${calendarState.endMonth}")
         HeatMapCalendar(
             weekHeaderPosition = HeatMapWeekHeaderPosition.End,
             weekHeader = { weekDay ->
                 Row(
-                    Modifier
-
-                        .height((gridHeight / 8).dp),
+                    Modifier.height((gridHeight / 8).dp),
                     horizontalArrangement = Arrangement.Start
                 ) {
                     Spacer(Modifier.width(5.dp))
-                    Text(
-                        weekDay.name.slice(0..2),
-                        fontSize = 15.sp
-                    )
-
-
+                    Text(weekDay.name.slice(0..2), fontSize = 15.sp)
                 }
             },
             monthHeader = {
-
                 if (LocalDate.now().yearMonth != it.yearMonth) {
                     Column(
                         Modifier.height((gridHeight / 8).dp),
@@ -129,83 +124,56 @@ else{
                 .fillMaxWidth(),
             state = calendarState,
             dayContent = { day, heatMapWeek ->
-                var suffix = ""
-                var hasNote = false
-                var dayState = ""
-                val datesMatching = habitData.filter { it.completionDate == day.date }
-                var habitCompletionEntity:  HabitCompletionEntity? = null
-                if (datesMatching.size > 1) {
-                    dayState = "error"
-                } else if (datesMatching.size == 1) {
-                    hasNote = datesMatching[0].hasNote()
-                    habitCompletionEntity = datesMatching[0]
-                    suffix= if (day.date > dateToday){"Disabled"}else{""}
-                    
-                    val isCompleted = if (habitEntity != null) {
-                        habitEntity.isCompleted(habitCompletionEntity)
-                    } else {
-                        habitCompletionEntity.repetitionsOnThisDay > 0
-                    }
+                val entry = byDate[day.date]
+                val cls = classifyDay(habitEntity, entry, day.date, dateToday)
+                val cs = MaterialTheme.colorScheme
 
-                    if (habitEntity?.isNegative == true) {
-                        // Negative Habit: 
-                        // If stays under limit -> Absolute (Success)
-                        // If goes over limit -> Failed (Failure)
-                        dayState = if (isCompleted) "absolute" else "failed"
-                    } else {
-                        // Positive Habit:
-                        // If meets or exceeds goal -> Absolute (Success)
-                        // If some progress but not goal -> Partial (Partial)
-                        dayState = if (isCompleted) {
-                             if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
-                        } else {
-                             "partial"
-                        }
-                    }
-                    
-                    dayState += suffix
-                } else {
-                    if (day.date > dateToday) {
-                        dayState = "incompleteDisabled"
-                        suffix = "Disabled"
-                    } else {
-                        dayState = "incomplete"
-                    }
+                // Discrete GitHub-style steps: how much of the daily target
+                // was actually logged, so measurable habits show gradations.
+                val heatAlphas = floatArrayOf(0.15f, 0.30f, 0.50f, 0.70f, 1.00f)
+                val level = heatLevel(habitEntity, entry)
 
+                val bg = when {
+                    cls == DayClass.SKIP -> cs.tertiaryContainer
+                    cls == DayClass.EXCUSED -> cs.surfaceVariant.copy(alpha = 0.45f)
+                    level != null && level > 0 -> cs.primary.copy(alpha = heatAlphas[level])
+                    level != null && level < 0 ->
+                        FailedRed.copy(alpha = 0.35f + 0.15f * -level)   // negative habit, over limit
+                    level != null -> cs.primary.copy(alpha = heatAlphas[0]) // logged but zero reps
+                    cls == DayClass.MET -> cs.primary   // negative habit clean day (incl. unlogged)
+                    else -> cs.inverseSurface.copy(alpha = 0.05f)          // untracked gap / future
                 }
-                if ((dayState != "incompleteDisabled" && dayState != "absoluteDisabled" && dayState != "partialDisabled") || heatMapWeek.days.any { it.date == LocalDate.now() }) {
+
+                val firstLog = remember(habitData) { byDate.keys.minOrNull() }
+                val outsideTrackingEra = firstLog != null && day.date.isBefore(firstLog)
+                val futureOutsideCurrentWeek = cls == DayClass.NEUTRAL &&
+                    day.date.isAfter(dateToday) &&
+                    !heatMapWeek.days.any { it.date == LocalDate.now() }
+                val hideCell = outsideTrackingEra || futureOutsideCurrentWeek
+
+                if (!hideCell) {
                     Box(
                         Modifier
-
                             .height((gridHeight / 8).dp)
                             .aspectRatio(1f),
-
-                        ) {
+                    ) {
                         Box(Modifier.padding((gridHeight / 80).dp)) {
-                            GridDayItem(hasNote = hasNote,
-                                state = dayState,
-                                incrementHabit = { incrementHabit(day.date) },
-                                deleteHabit = { deleteHabit(day.date) },
+                            GridDayItem(
+                                bg = bg,
                                 date = day.date,
                                 showDate = showDate,
-                                interactive =  suffix != "Disabled" && interactive,
+                                interactive = interactive && cls != DayClass.NEUTRAL,
+                                hasNote = entry?.hasNote() == true,
+                                isSkipCell = cls == DayClass.SKIP,
+                                incrementHabit = { incrementHabit(day.date) },
+                                unSkipHabit = { unSkipHabit(day.date) },
                                 dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(
-                                        visible,
-                                        onDismiss,
-                                        habitCompletionEntity,
-                                        day.date
-                                    )
-                                },
-                                skipHabit = { skipHabit(day.date) },
-                                unSkipHabit = { unSkipHabit(day.date) }
+                                    dialogueComposable(visible, onDismiss, entry, day.date)
+                                }
                             )
                         }
                     }
-
                 }
             })
-
-
-    }}
+    }
 }

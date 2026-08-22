@@ -4,51 +4,110 @@ import androidx.compose.ui.graphics.Color
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.isCompleted
+import com.zavedahmad.yaHabit.database.entities.isNotNeeded
 import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.LocalDate
 
+/** Shared failure color for stats surfaces (pie, frequency bars, heatmap). */
+val FailedRed: Color = Color(0xFFF44336)
+
 /**
- * Sign-aware "did this day count toward the habit's goal" check.
- *
- * Positive habits: a logged day that meets the target counts; unlogged does not.
- * Negative habits (log-and-track): unlogged or within-limit days count as clean;
- * only days logged over the limit fail.
+ * Outcome of a single calendar day, sign- and quota-aware.
+ * This is the single source of truth for stats, streaks, charts and heatmap.
  */
-fun dayIsMet(habit: HabitEntity, completion: HabitCompletionEntity?): Boolean {
+enum class DayClass { MET, MISSED, OVER_LIMIT, SKIP, EXCUSED, NEUTRAL }
+
+/** True when every day is expected (frequency >= cycle): unlogged past days are misses. */
+fun isStrictSchedule(habit: HabitEntity): Boolean =
+    !habit.isNegative && habit.cycle > 0 && habit.frequency >= habit.cycle
+
+/**
+ * Quantized heat level 0..4 for a logged day, GitHub-style:
+ * how much of the daily target was logged. Null = nothing to heat
+ * (unlogged, skipped, or excused).
+ * Negative habits: any within-limit day is a full "level 4" clean day;
+ * over-limit days come back as -1..-4 scaled by how far over.
+ */
+fun heatLevel(habit: HabitEntity, entry: HabitCompletionEntity?): Int? {
+    if (entry == null || entry.isSkip() || entry.isNotNeeded()) return null
     return if (habit.isNegative) {
-        val reps = completion?.repetitionsOnThisDay ?: 0.0
-        reps <= habit.repetitionPerDay
+        val reps = entry.repetitionsOnThisDay
+        when {
+            reps <= habit.repetitionPerDay -> 4
+            habit.repetitionPerDay <= 0.0 -> -4
+            else -> {
+                val excess = (reps / habit.repetitionPerDay) - 1.0 // 0..N over limit
+                -((excess * 4.0).toInt().coerceIn(1, 4))
+            }
+        }
     } else {
-        completion != null && !completion.isSkip() && habit.isCompleted(completion)
+        val target = if (habit.repetitionPerDay <= 0.0) 1.0 else habit.repetitionPerDay
+        val ratio = entry.repetitionsOnThisDay / target
+        when {
+            ratio >= 1.0 -> 4
+            ratio >= 0.75 -> 3
+            ratio >= 0.5 -> 2
+            ratio > 0.0 -> 1
+            else -> 0
+        }
     }
 }
 
-data class CycleMetrics(
-    val metDays: Int,
-    val failedDays: Int,
+/**
+ * Classifies one date. Key semantics:
+ * - Negative habits: any day without an over-limit log is clean (MET).
+ * - Strict positive habits: an unlogged past day is MISSED.
+ * - Flexible positive habits (e.g. 1 of 7): unlogged days are NEUTRAL,
+ *   never counted against the user.
+ * - Auto-placeholders (partial=true) on past dates read as scheduled-but-not-done.
+ * - Future days are NEUTRAL.
+ */
+fun classifyDay(
+    habit: HabitEntity,
+    entry: HabitCompletionEntity?,
+    date: LocalDate,
+    today: LocalDate
+): DayClass {
+    if (date > today) return DayClass.NEUTRAL
+    if (entry?.isSkip() == true) return DayClass.SKIP
+    if (entry?.isNotNeeded() == true) return DayClass.EXCUSED
+
+    return if (habit.isNegative) {
+        val reps = entry?.repetitionsOnThisDay ?: 0.0
+        if (reps <= habit.repetitionPerDay) DayClass.MET else DayClass.OVER_LIMIT
+    } else {
+        when {
+            entry == null ->
+                if (isStrictSchedule(habit)) DayClass.MISSED else DayClass.NEUTRAL
+            habit.isCompleted(entry) -> DayClass.MET
+            else -> DayClass.MISSED
+        }
+    }
+}
+
+data class CycleMetrics(    val metDays: Int,
+    val missedDays: Int,
     val skipDays: Int,
+    val excusedDays: Int,
+    // metDays + missedDays - the honest denominator for success rate.
     val trackedDays: Int,
     val successRate: Int,
     val currentStreak: Int,
     val bestStreak: Int,
-    // True when streaks are counted in whole cycles (flexible schedules,
-    // e.g. 3 times per week) rather than consecutive days.
-    val cycleBased: Boolean
+    // Streak unit: cycles for flexible schedules, days otherwise.
+    val cycleBased: Boolean,
+    val strictSchedule: Boolean
 )
 
 /**
- * Computes summary metrics over the habit's full completion history.
+ * Computes summary metrics over the full tracked window (first log .. today)
+ * by classifying every single date - not just rows that exist in the DB.
  *
  * Streak semantics:
- * - Negative habits: day-based; unlogged days are clean, streaks break only
- *   on an over-limit day.
- * - Positive habits with frequency < cycle ("3 of 7 days"): streaks count
- *   consecutive met cycles. A cycle is a [HabitEntity.cycle]-day window that
- *   contains at least [HabitEntity.frequency] met days. The still-open current
- *   window gets grace: it does not break the streak until it closes unmet.
- * - Positive habits with frequency >= cycle (effectively daily): day-based,
- *   with today unlogged treated as grace rather than a break.
+ * - Flexible positive habits: streaks count consecutive met cycles; the open
+ *   current window gets grace.
+ * - Everything else: day-based, today-unlogged gets grace.
  */
 fun computeCycleMetrics(
     habit: HabitEntity,
@@ -56,11 +115,10 @@ fun computeCycleMetrics(
     today: LocalDate = LocalDate.now()
 ): CycleMetrics {
     if (habitAllData == null || habitAllData.isEmpty()) {
-        return CycleMetrics(0, 0, 0, 0, 0, 0, 0, false)
+        return CycleMetrics(0, 0, 0, 0, 0, 0, 0, 0, false, false)
     }
 
-    // One entry per date; prefer the real log over auto-filled partial
-    // placeholders (which have reps = 0 and would read as "not met").
+    // One entry per date; prefer the real log over auto-filled placeholders.
     val byDate = HashMap<LocalDate, HabitCompletionEntity>()
     for (entry in habitAllData) {
         val existing = byDate[entry.completionDate]
@@ -69,28 +127,36 @@ fun computeCycleMetrics(
         }
     }
 
-    var metDays = 0
-    var failedDays = 0
-    var skipDays = 0
-    for (entry in habitAllData) {
-        when {
-            entry.isSkip() -> skipDays++
-            dayIsMet(habit, entry) -> metDays++
-            else -> failedDays++
-        }
-    }
-
-    val earliest = byDate.keys.minOrNull() ?: return CycleMetrics(0, 0, 0, 0, 0, 0, 0, false)
+    val earliest = byDate.keys.minOrNull()
+        ?: return CycleMetrics(0, 0, 0, 0, 0, 0, 0, 0, false, false)
     val floorDate = earliest.coerceAtLeast(today.minusYears(2))
 
+    var metDays = 0
+    var missedDays = 0
+    var skipDays = 0
+    var excusedDays = 0
+
+    var d = floorDate
+    while (!d.isAfter(today)) {
+        when (classifyDay(habit, byDate[d], d, today)) {
+            DayClass.MET -> metDays++
+            DayClass.MISSED, DayClass.OVER_LIMIT -> missedDays++
+            DayClass.SKIP -> skipDays++
+            DayClass.EXCUSED -> excusedDays++
+            DayClass.NEUTRAL -> {}
+        }
+        d = d.plusDays(1)
+    }
+
+    val strict = isStrictSchedule(habit)
     val cycleBased = !habit.isNegative && habit.cycle > 0 && habit.frequency < habit.cycle
 
     fun windowMet(windowEnd: LocalDate): Boolean {
         var count = 0
-        var d = windowEnd.minusDays(habit.cycle - 1L)
-        while (!d.isAfter(windowEnd)) {
-            if (dayIsMet(habit, byDate[d])) count++
-            d = d.plusDays(1)
+        var w = windowEnd.minusDays(habit.cycle - 1L)
+        while (!w.isAfter(windowEnd)) {
+            if (classifyDay(habit, byDate[w], w, today) == DayClass.MET) count++
+            w = w.plusDays(1)
         }
         return count >= habit.frequency
     }
@@ -99,9 +165,6 @@ fun computeCycleMetrics(
     var bestStreak = 0
 
     if (cycleBased) {
-        // Current streak in cycles, anchored at today and stepping back one
-        // full window at a time. The open current window is grace: skip it
-        // instead of breaking when it is not yet met.
         var end = today
         if (!windowMet(end)) end = end.minusDays(habit.cycle.toLong())
         while (!end.isBefore(floorDate)) {
@@ -111,8 +174,6 @@ fun computeCycleMetrics(
             } else break
         }
 
-        // Best streak in consecutive non-overlapping cycles anchored at the
-        // first tracked day.
         var end2 = earliest.plusDays(habit.cycle - 1L)
         var temp = 0
         while (!end2.isAfter(today)) {
@@ -123,21 +184,21 @@ fun computeCycleMetrics(
             end2 = end2.plusDays(habit.cycle.toLong())
         }
     } else {
-        // Day-based current streak with a grace day for unlogged todays.
         var checkDate = today
-        if (!dayIsMet(habit, byDate[checkDate])) checkDate = checkDate.minusDays(1)
+        if (classifyDay(habit, byDate[checkDate], checkDate, today) != DayClass.MET) {
+            checkDate = checkDate.minusDays(1)
+        }
         while (!checkDate.isBefore(floorDate)) {
-            if (dayIsMet(habit, byDate[checkDate])) {
+            if (classifyDay(habit, byDate[checkDate], checkDate, today) == DayClass.MET) {
                 currentStreak++
                 checkDate = checkDate.minusDays(1)
             } else break
         }
 
-        // Day-based best streak across the tracked window.
         var temp = 0
-        var date: LocalDate = earliest
+        var date: LocalDate = floorDate
         while (!date.isAfter(today)) {
-            if (dayIsMet(habit, byDate[date])) {
+            if (classifyDay(habit, byDate[date], date, today) == DayClass.MET) {
                 temp++
                 if (temp > bestStreak) bestStreak = temp
             } else temp = 0
@@ -145,17 +206,19 @@ fun computeCycleMetrics(
         }
     }
 
-    val trackedDays = metDays + failedDays
+    val trackedDays = metDays + missedDays
     val successRate = if (trackedDays > 0) (metDays * 100 / trackedDays) else 0
 
     return CycleMetrics(
         metDays = metDays,
-        failedDays = failedDays,
+        missedDays = missedDays,
         skipDays = skipDays,
+        excusedDays = excusedDays,
         trackedDays = trackedDays,
         successRate = successRate,
         currentStreak = currentStreak,
         bestStreak = bestStreak,
-        cycleBased = cycleBased
+        cycleBased = cycleBased,
+        strictSchedule = strict
     )
 }

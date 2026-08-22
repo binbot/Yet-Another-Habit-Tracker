@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -29,8 +30,6 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.isOnlyNote
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.Bars
@@ -40,50 +39,46 @@ import ir.ehsannarmani.compose_charts.models.LabelProperties
 import java.time.Year
 import java.time.YearMonth
 
+private val MissedRed = Color(0xFFF44336)
+
 @Composable
 fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     val yearToShow = remember { mutableStateOf(Year.now()) }
-    val currentYearData by remember(habitAllData) {
-        derivedStateOf {
-            habitAllData?.filter { Year.from(it.completionDate) == yearToShow.value } ?: emptyList()
-        }
-    }
 
-    val allMonths by remember {
+    val today = remember { java.time.LocalDate.now() }
+
+    val data by remember(habitAllData, yearToShow, habitEntity.id) {
         derivedStateOf {
+            // Enumerate actual calendar days per month so unlogged misses
+            // count for strict schedules; NEUTRAL/SKIP/EXCUSED are excluded.
+            val byDate = habitAllData?.associateBy { it.completionDate } ?: emptyMap()
+
             (1..12).map { i ->
-                YearMonth.of(
-                    yearToShow.value.value,
-                    i
+                val month = YearMonth.of(yearToShow.value.value, i)
+                var metCount = 0
+                var missedCount = 0
+                var day = month.atDay(1)
+                val lastDay = month.atEndOfMonth()
+                while (!day.isAfter(lastDay) && !day.isAfter(today)) {
+                    when (classifyDay(habitEntity, byDate[day], day, today)) {
+                        DayClass.MET -> metCount++
+                        DayClass.MISSED, DayClass.OVER_LIMIT -> missedCount++
+                        else -> {}
+                    }
+                    day = day.plusDays(1)
+                }
+
+                Bars(
+                    label = month.month.name.slice(0..2),
+                    values = listOf(
+                        Bars.Data(value = metCount.toDouble(), color = SolidColor(habitEntity.color)),
+                        Bars.Data(value = missedCount.toDouble(), color = SolidColor(MissedRed.copy(alpha = 0.5f)))
+                    )
                 )
             }
         }
     }
 
-    val habitColor = habitEntity.color
-    val successColor = habitColor
-    val failureColor = habitColor.copy(alpha = 0.5f)
-
-    val data by remember(habitAllData, yearToShow) {
-        derivedStateOf {
-
-                allMonths.map { month ->
-                    val monthData = currentYearData.filter { it.completionDate.yearMonth == month && !it.isOnlyNote() }
-                    val successCount = monthData.filter { habitEntity.isCompleted(it) }.size
-                    val failureCount = monthData.filter { !habitEntity.isCompleted(it) }.size
-
-                    Bars(
-                        label = month.month.name.slice(0..2), values = listOf(
-                            Bars.Data(value = successCount.toDouble(), color = SolidColor(successColor)),
-                            Bars.Data(value = failureCount.toDouble(), color = SolidColor(failureColor))
-                        )
-                    )
-                }
-
-        }
-
-
-    }
     Column {
         ColumnChart(
             modifier = Modifier
@@ -100,29 +95,22 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
             labelProperties = LabelProperties(
                 enabled = true,
                 builder = { modifier, label, shouldRotate, index ->
-                    Text(
-                        label, style = TextStyle(fontSize = 10.sp)
-                    )
+                    Text(label, style = TextStyle(fontSize = 10.sp))
                 }
-
-            ), labelHelperProperties = LabelHelperProperties(enabled = false)
-
-
+            ),
+            labelHelperProperties = LabelHelperProperties(enabled = false)
         )
-
-
     }
+
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Card(onClick = {
-            yearToShow.value = yearToShow.value.minusYears(1)
-        }) {
+        Card(onClick = { yearToShow.value = yearToShow.value.minusYears(1) }) {
             Icon(
                 Icons.Default.ArrowBackIosNew,
-                contentDescription = "",
+                contentDescription = "previous year",
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
             )
         }
@@ -130,12 +118,10 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
             text = yearToShow.value.toString(),
             Modifier.clickable(onClick = { yearToShow.value = Year.now() }),
         )
-        Card(onClick = {
-            yearToShow.value = yearToShow.value.plusYears(1)
-        }) {
+        Card(onClick = { yearToShow.value = yearToShow.value.plusYears(1) }) {
             Icon(
                 Icons.AutoMirrored.Default.ArrowForwardIos,
-                contentDescription = "",
+                contentDescription = "next year",
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
             )
         }
