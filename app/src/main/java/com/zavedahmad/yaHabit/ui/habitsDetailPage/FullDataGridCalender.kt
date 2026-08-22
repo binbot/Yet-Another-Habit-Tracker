@@ -1,5 +1,6 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,13 +10,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +33,7 @@ import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -175,5 +182,46 @@ fun FullDataGridCalender(
                     }
                 }
             })
+
+        // Legend: graded shades follow logged amount vs daily target.
+        Row(
+            Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val cs = MaterialTheme.colorScheme
+            listOf(0.15f, 0.30f, 0.50f, 0.70f, 1.00f).forEach { alpha ->
+                Box(
+                    Modifier
+                        .padding(end = 3.dp)
+                        .size(12.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(cs.primary.copy(alpha = alpha))
+                )
+            }
+            Spacer(Modifier.width(5.dp))
+            Text(
+                "0-" + formatNumberToReadable(habitEntity.repetitionPerDay) + " " + habitEntity.measurementUnit,
+                fontSize = 11.sp,
+                color = cs.onSurfaceVariant
+            )
+            LegendSwatch(color = cs.tertiaryContainer, label = "Skipped")
+            if (habitEntity.isNegative) {
+                LegendSwatch(color = FailedRed.copy(alpha = 0.9f), label = "Over limit")
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendSwatch(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
+        Box(
+            Modifier
+                .size(12.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(color)
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(label, fontSize = 11.sp)
     }
 }
