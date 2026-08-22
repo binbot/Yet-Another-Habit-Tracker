@@ -30,9 +30,6 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.yearMonth
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isOnlyNote
-import com.zavedahmad.yaHabit.database.entities.isPartial
-import com.zavedahmad.yaHabit.database.entities.isSkip
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.Bars
@@ -48,21 +45,28 @@ private val MissedRed = Color(0xFFF44336)
 fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
     val yearToShow = remember { mutableStateOf(Year.now()) }
 
+    val today = remember { java.time.LocalDate.now() }
+
     val data by remember(habitAllData, yearToShow, habitEntity.id) {
         derivedStateOf {
-            val yearData = habitAllData?.filter {
-                Year.from(it.completionDate) == yearToShow.value
-            } ?: emptyList()
+            // Enumerate actual calendar days per month so unlogged misses
+            // count for strict schedules; NEUTRAL/SKIP/EXCUSED are excluded.
+            val byDate = habitAllData?.associateBy { it.completionDate } ?: emptyMap()
 
             (1..12).map { i ->
                 val month = YearMonth.of(yearToShow.value.value, i)
-                // Real logs only: placeholders and skips are not attempts.
-                val monthLogs = yearData.filter {
-                    it.completionDate.yearMonth == month &&
-                        !it.isOnlyNote() && !it.isPartial() && !it.isSkip()
+                var metCount = 0
+                var missedCount = 0
+                var day = month.atDay(1)
+                val lastDay = month.atEndOfMonth()
+                while (!day.isAfter(lastDay) && !day.isAfter(today)) {
+                    when (classifyDay(habitEntity, byDate[day], day, today)) {
+                        DayClass.MET -> metCount++
+                        DayClass.MISSED, DayClass.OVER_LIMIT -> missedCount++
+                        else -> {}
+                    }
+                    day = day.plusDays(1)
                 }
-                val metCount = monthLogs.count { dayIsMet(habitEntity, it) }
-                val missedCount = monthLogs.size - metCount
 
                 Bars(
                     label = month.month.name.slice(0..2),

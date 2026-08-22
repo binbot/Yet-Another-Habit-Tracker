@@ -21,49 +21,36 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import com.zavedahmad.yaHabit.database.entities.DayState
 import java.time.LocalDate
 
 private val FailedRed = Color(0xFFF44336)
 
 /**
- * Heat-map cell colours. Met days shade by [intensity] (reps / target),
- * so heavier days read darker - GitHub-contribution style.
+ * Heatmap cell visuals driven by [DayClass]:
+ * solid habit color = done/clean, red tint = missed, solid red = over limit.
  */
 private data class GridVisuals(val bg: Color, val noteDot: Color, val text: Color)
 
-private fun resolveGridVisuals(state: DayState, cs: ColorScheme, intensity: Float): GridVisuals {
-    val bg = when (state) {
-        DayState.Absolute, DayState.AbsoluteMore ->
-            cs.primary.copy(alpha = 0.45f + 0.55f * intensity.coerceIn(0f, 1f))
-        DayState.Partial ->
-            cs.primary.copy(alpha = 0.12f + 0.28f * intensity.coerceIn(0f, 1f))
-        DayState.NegativeCount ->
-            cs.primary.copy(alpha = 0.60f)
-        DayState.Failed -> FailedRed.copy(alpha = 0.90f)
-        DayState.FailedDisabled -> FailedRed.copy(alpha = 0.25f)
-        DayState.Skip -> cs.tertiaryContainer
-        DayState.NotNeeded -> cs.surfaceVariant.copy(alpha = 0.5f)
-        DayState.Note -> cs.secondaryContainer
-        DayState.Incomplete -> cs.surfaceVariant.copy(alpha = 0.6f)
-        DayState.IncompleteDisabled -> cs.inverseSurface.copy(alpha = 0.05f)
-        DayState.AbsoluteDisabled -> cs.inverseSurface.copy(alpha = 0.12f)
-        DayState.AbsoluteMoreDisabled -> cs.inverseSurface.copy(alpha = 0.10f)
-        DayState.PartialDisabled, DayState.NegativeCountDisabled ->
-            cs.inverseSurface.copy(alpha = 0.08f)
-        DayState.NotNeededDisabled -> cs.surfaceVariant.copy(alpha = 0.25f)
-        DayState.NoteDisabled -> cs.secondaryContainer.copy(alpha = 0.3f)
-        DayState.SkipDisabled -> cs.tertiaryContainer.copy(alpha = 0.3f)
-        DayState.Error -> cs.error
+private fun resolveGridVisuals(dayClass: DayClass, cs: ColorScheme): GridVisuals {
+    val bg = when (dayClass) {
+        DayClass.MET -> cs.primary.copy(alpha = 0.95f)
+        DayClass.MISSED -> FailedRed.copy(alpha = 0.20f)
+        DayClass.OVER_LIMIT -> FailedRed.copy(alpha = 0.90f)
+        DayClass.SKIP -> cs.tertiaryContainer
+        DayClass.EXCUSED -> cs.surfaceVariant.copy(alpha = 0.45f)
+        DayClass.NEUTRAL -> cs.inverseSurface.copy(alpha = 0.04f)
     }
     val text = if (bg.luminance() > 0.5f) Color(0xFF1C1B1F) else Color.White
-    return GridVisuals(bg, noteDot = if (bg.luminance() > 0.5f) cs.tertiary else cs.tertiaryContainer, text = text)
+    return GridVisuals(
+        bg = bg,
+        noteDot = if (bg.luminance() > 0.5f) cs.tertiary else cs.tertiaryContainer,
+        text = text
+    )
 }
 
 @Composable
 fun GridDayItem(
-    state: DayState,
-    intensity: Float = 1f,
+    dayClass: DayClass,
     date: LocalDate,
     showDate: Boolean = false,
     interactive: Boolean = false,
@@ -76,17 +63,11 @@ fun GridDayItem(
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
 
     val cs = MaterialTheme.colorScheme
-    val visuals = remember(state, cs, intensity) { resolveGridVisuals(state, cs, intensity) }
-
-    val primaryAction: () -> Unit = when {
-        state == DayState.Skip -> unSkipHabit
-        state.isDisabled || state == DayState.Error -> ({})
-        else -> incrementHabit
-    }
+    val visuals = remember(dayClass, cs) { resolveGridVisuals(dayClass, cs) }
 
     val modifier = if (interactive) {
         Modifier.combinedClickable(
-            onClick = primaryAction,
+            onClick = if (dayClass == DayClass.SKIP) unSkipHabit else incrementHabit,
             onLongClick = { isDialogVisible.value = true }
         )
     } else Modifier

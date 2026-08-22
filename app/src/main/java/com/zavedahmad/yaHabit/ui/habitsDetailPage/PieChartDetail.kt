@@ -20,47 +20,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.isPartial
-import com.zavedahmad.yaHabit.database.entities.isSkip
 import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
 
-private val FailedRed = Color(0xFFF44336)
+private val MissedRed = Color(0xFFF44336)
 
 @Composable
 fun PieChartDetail(habitAllData: List<HabitCompletionEntity>?, habitEntity: HabitEntity) {
-    // Slice counts over logged entries only, sign-aware:
-    // - positive: met = target reached; missed = logged under target
-    // - negative: met = clean / within limit; missed = over limit
-    val counts = remember(habitAllData, habitEntity.id) {
-        var met = 0; var missed = 0; var pending = 0; var skipped = 0
-        habitAllData?.forEach { entry ->
-            when {
-                entry.isSkip() -> skipped++
-                entry.isPartial() -> pending++
-                dayIsMet(habitEntity, entry) -> met++
-                else -> missed++
-            }
-        }
-        listOf(met, missed, pending, skipped)
-    }
+    val metrics = computeCycleMetrics(habitEntity, habitAllData)
 
     val isNegative = habitEntity.isNegative
     val labelMet = if (isNegative) "Clean" else "Met"
     val labelMissed = if (isNegative) "Over Limit" else "Missed"
-    val labelPending = if (isNegative) "Pending" else "Pending"
 
     val colorMet = habitEntity.color
-    val colorMissed = FailedRed
-    val colorPending = habitEntity.color.copy(alpha = 0.4f)
+    val colorMissed = MissedRed
     val colorSkipped = MaterialTheme.colorScheme.outline
 
-    val data = remember(counts, colorMet, colorSkipped) {
+    val data = remember(metrics, colorMet, colorSkipped) {
         listOf(
-            Pie(label = labelMet, data = counts[0].toDouble(), color = colorMet, selectedColor = Color.Green),
-            Pie(label = labelMissed, data = counts[1].toDouble(), color = colorMissed, selectedColor = Color.Red),
-            Pie(label = labelPending, data = counts[2].toDouble(), color = colorPending, selectedColor = Color.Yellow),
-            Pie(label = "Skipped", data = counts[3].toDouble(), color = colorSkipped, selectedColor = Color.Blue),
+            Pie(label = labelMet, data = metrics.metDays.toDouble(), color = colorMet, selectedColor = Color.Green),
+            Pie(label = labelMissed, data = metrics.missedDays.toDouble(), color = colorMissed, selectedColor = Color.Red),
+            Pie(label = "Skipped", data = metrics.skipDays.toDouble(), color = colorSkipped, selectedColor = Color.Blue),
         )
     }
 
@@ -70,10 +51,9 @@ fun PieChartDetail(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("$labelMet: ${counts[0]}", color = colorMet)
-            Text("$labelMissed: ${counts[1]}", color = colorMissed)
-            Text("Pending: ${counts[2]}", color = colorPending)
-            Text("Skipped: ${counts[3]}", color = colorSkipped)
+            Text("$labelMet: ${metrics.metDays}", color = colorMet)
+            Text("$labelMissed: ${metrics.missedDays}", color = colorMissed)
+            Text("Skipped: ${metrics.skipDays}", color = colorSkipped)
         }
         Surface(
             Modifier.border(

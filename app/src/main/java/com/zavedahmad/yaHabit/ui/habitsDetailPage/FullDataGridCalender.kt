@@ -22,12 +22,10 @@ import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapWeekHeaderPosition
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.yearMonth
-import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isPartial
-import com.zavedahmad.yaHabit.database.entities.resolveDayState
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -67,18 +65,19 @@ fun FullDataGridCalender(
         }
     }
 
-    // One entry per date (real log preferred over partial placeholder),
-    // plus a duplicate flag for the error state.
-    val entriesByDate = remember(habitData) {
-        val result = HashMap<LocalDate, Pair<HabitCompletionEntity?, Boolean>>()
-        habitData?.groupBy { it.completionDate }?.forEach { (date, entries) ->
-            val best = entries.firstOrNull { !it.isPartial() } ?: entries.first()
-            result[date] = Pair(best, entries.size > 1)
+    // One entry per date; prefer the real log over auto-filled placeholders.
+    val byDate = remember(habitData) {
+        val result = HashMap<LocalDate, HabitCompletionEntity>()
+        habitData?.forEach { entry ->
+            val existing = result[entry.completionDate]
+            if (existing == null || (existing.isPartial() && !entry.isPartial())) {
+                result[entry.completionDate] = entry
+            }
         }
         result
     }
 
-    if (habitData == null) return
+    if (habitData == null || habitEntity == null) return
 
     Column {
         HeatMapCalendar(
@@ -124,29 +123,11 @@ fun FullDataGridCalender(
                 .fillMaxWidth(),
             state = calendarState,
             dayContent = { day, heatMapWeek ->
-                val match = entriesByDate[day.date]
-                val entity = match?.first
-                val hasMultiple = match?.second == true
+                val dayClass = classifyDay(habitEntity, byDate[day.date], day.date, dateToday)
 
-                val state: DayState = when {
-                    hasMultiple -> DayState.Error
-                    habitEntity != null -> resolveDayState(habitEntity, entity, day.date, dateToday)
-                    entity != null && entity.repetitionsOnThisDay > 0 -> DayState.Absolute
-                    day.date > dateToday -> DayState.IncompleteDisabled
-                    else -> DayState.Incomplete
-                }
-
-                // Intensity = how much of the target was logged. Negative habits
-                // shade uniformly (any within-limit day is equally clean).
-                val intensity = when {
-                    habitEntity == null || habitEntity.isNegative -> 1f
-                    entity == null || habitEntity.repetitionPerDay <= 0.0 -> 0f
-                    else ->
-                        (entity.repetitionsOnThisDay / habitEntity.repetitionPerDay)
-                            .toFloat().coerceIn(0f, 1f)
-                }
-
-                val hideCell = state.isDisabled &&
+                // Keep the grid compact: neutral cells only render in the
+                // week containing today.
+                val hideCell = dayClass == DayClass.NEUTRAL &&
                     !heatMapWeek.days.any { it.date == LocalDate.now() }
 
                 if (!hideCell) {
@@ -157,16 +138,17 @@ fun FullDataGridCalender(
                     ) {
                         Box(Modifier.padding((gridHeight / 80).dp)) {
                             GridDayItem(
-                                state = state,
-                                intensity = intensity,
+                                dayClass = dayClass,
                                 date = day.date,
                                 showDate = showDate,
-                                interactive = !state.isDisabled && interactive && state != DayState.Error,
-                                hasNote = entity?.hasNote() == true,
+                                interactive = interactive && dayClass != DayClass.NEUTRAL,
+                                hasNote = byDate[day.date]?.hasNote() == true,
                                 incrementHabit = { incrementHabit(day.date) },
                                 unSkipHabit = { unSkipHabit(day.date) },
                                 dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(visible, onDismiss, entity, day.date)
+                                    dialogueComposable(
+                                        visible, onDismiss, byDate[day.date], day.date
+                                    )
                                 }
                             )
                         }
