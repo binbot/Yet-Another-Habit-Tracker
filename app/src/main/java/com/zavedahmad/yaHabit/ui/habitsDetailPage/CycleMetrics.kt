@@ -1,5 +1,6 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
+import androidx.compose.ui.graphics.Color
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.isCompleted
@@ -7,6 +8,9 @@ import com.zavedahmad.yaHabit.database.entities.isNotNeeded
 import com.zavedahmad.yaHabit.database.entities.isPartial
 import com.zavedahmad.yaHabit.database.entities.isSkip
 import java.time.LocalDate
+
+/** Shared failure color for stats surfaces (pie, frequency bars, heatmap). */
+val FailedRed: Color = Color(0xFFF44336)
 
 /**
  * Outcome of a single calendar day, sign- and quota-aware.
@@ -17,6 +21,38 @@ enum class DayClass { MET, MISSED, OVER_LIMIT, SKIP, EXCUSED, NEUTRAL }
 /** True when every day is expected (frequency >= cycle): unlogged past days are misses. */
 fun isStrictSchedule(habit: HabitEntity): Boolean =
     !habit.isNegative && habit.cycle > 0 && habit.frequency >= habit.cycle
+
+/**
+ * Quantized heat level 0..4 for a logged day, GitHub-style:
+ * how much of the daily target was logged. Null = nothing to heat
+ * (unlogged, skipped, or excused).
+ * Negative habits: any within-limit day is a full "level 4" clean day;
+ * over-limit days come back as -1..-4 scaled by how far over.
+ */
+fun heatLevel(habit: HabitEntity, entry: HabitCompletionEntity?): Int? {
+    if (entry == null || entry.isSkip() || entry.isNotNeeded()) return null
+    return if (habit.isNegative) {
+        val reps = entry.repetitionsOnThisDay
+        when {
+            reps <= habit.repetitionPerDay -> 4
+            habit.repetitionPerDay <= 0.0 -> -4
+            else -> {
+                val excess = (reps / habit.repetitionPerDay) - 1.0 // 0..N over limit
+                -((excess * 4.0).toInt().coerceIn(1, 4))
+            }
+        }
+    } else {
+        val target = if (habit.repetitionPerDay <= 0.0) 1.0 else habit.repetitionPerDay
+        val ratio = entry.repetitionsOnThisDay / target
+        when {
+            ratio >= 1.0 -> 4
+            ratio >= 0.75 -> 3
+            ratio >= 0.5 -> 2
+            ratio > 0.0 -> 1
+            else -> 0
+        }
+    }
+}
 
 /**
  * Classifies one date. Key semantics:
@@ -50,8 +86,7 @@ fun classifyDay(
     }
 }
 
-data class CycleMetrics(
-    val metDays: Int,
+data class CycleMetrics(    val metDays: Int,
     val missedDays: Int,
     val skipDays: Int,
     val excusedDays: Int,

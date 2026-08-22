@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -123,12 +124,32 @@ fun FullDataGridCalender(
                 .fillMaxWidth(),
             state = calendarState,
             dayContent = { day, heatMapWeek ->
-                val dayClass = classifyDay(habitEntity, byDate[day.date], day.date, dateToday)
+                val entry = byDate[day.date]
+                val cls = classifyDay(habitEntity, entry, day.date, dateToday)
+                val cs = MaterialTheme.colorScheme
 
-                // Keep the grid compact: neutral cells only render in the
-                // week containing today.
-                val hideCell = dayClass == DayClass.NEUTRAL &&
+                // Discrete GitHub-style steps: how much of the daily target
+                // was actually logged, so measurable habits show gradations.
+                val heatAlphas = floatArrayOf(0.15f, 0.30f, 0.50f, 0.70f, 1.00f)
+                val level = heatLevel(habitEntity, entry)
+
+                val bg = when {
+                    cls == DayClass.SKIP -> cs.tertiaryContainer
+                    cls == DayClass.EXCUSED -> cs.surfaceVariant.copy(alpha = 0.45f)
+                    level != null && level > 0 -> cs.primary.copy(alpha = heatAlphas[level])
+                    level != null && level < 0 ->
+                        FailedRed.copy(alpha = 0.35f + 0.15f * -level)   // negative habit, over limit
+                    level != null -> cs.primary.copy(alpha = heatAlphas[0]) // logged but zero reps
+                    cls == DayClass.MET -> cs.primary   // negative habit clean day (incl. unlogged)
+                    else -> cs.inverseSurface.copy(alpha = 0.05f)          // untracked gap / future
+                }
+
+                val firstLog = remember(habitData) { byDate.keys.minOrNull() }
+                val outsideTrackingEra = firstLog != null && day.date.isBefore(firstLog)
+                val futureOutsideCurrentWeek = cls == DayClass.NEUTRAL &&
+                    day.date.isAfter(dateToday) &&
                     !heatMapWeek.days.any { it.date == LocalDate.now() }
+                val hideCell = outsideTrackingEra || futureOutsideCurrentWeek
 
                 if (!hideCell) {
                     Box(
@@ -138,17 +159,16 @@ fun FullDataGridCalender(
                     ) {
                         Box(Modifier.padding((gridHeight / 80).dp)) {
                             GridDayItem(
-                                dayClass = dayClass,
+                                bg = bg,
                                 date = day.date,
                                 showDate = showDate,
-                                interactive = interactive && dayClass != DayClass.NEUTRAL,
-                                hasNote = byDate[day.date]?.hasNote() == true,
+                                interactive = interactive && cls != DayClass.NEUTRAL,
+                                hasNote = entry?.hasNote() == true,
+                                isSkipCell = cls == DayClass.SKIP,
                                 incrementHabit = { incrementHabit(day.date) },
                                 unSkipHabit = { unSkipHabit(day.date) },
                                 dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(
-                                        visible, onDismiss, byDate[day.date], day.date
-                                    )
+                                    dialogueComposable(visible, onDismiss, entry, day.date)
                                 }
                             )
                         }
