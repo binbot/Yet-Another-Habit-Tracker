@@ -22,11 +22,12 @@ import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapWeekHeaderPosition
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.yearMonth
+import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
-import com.zavedahmad.yaHabit.database.entities.isCompleted
-import com.zavedahmad.yaHabit.database.entities.state
+import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yaHabit.database.entities.resolveDayState
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -34,7 +35,6 @@ import java.time.YearMonth
 @Composable
 fun FullDataGridCalender(
     incrementHabit: (date: LocalDate) -> Unit = {},
-
     deleteHabit: (date: LocalDate) -> Unit = {},
     initialMonthString: String? = null,
     habitData: List<HabitCompletionEntity>? = null, gridHeight: Int = 190,
@@ -47,17 +47,9 @@ fun FullDataGridCalender(
     dialogueComposable: @Composable (Boolean, () -> Unit, HabitCompletionEntity?, LocalDate) -> Unit
 ) {
     val currentMonth = remember { YearMonth.now() }
-//    val habitDataSorted = habitData.sortedBy { it.completionDate }
-
-
     val startMonth = currentMonth.minusMonths(12)
-    // Adjust as needed
-
-    val endMonth = remember { currentMonth.plusMonths(100) } // Adjust as needed
-    // Available from the library
+    val endMonth = remember { currentMonth.plusMonths(100) }
     val dateToday = LocalDate.now()
-    // CHANGE this to change grid height
-
 
     val calendarState = rememberHeatMapCalendarState(
         startMonth = startMonth,
@@ -74,30 +66,33 @@ fun FullDataGridCalender(
             calendarState.endMonth = YearMonth.now()
         }
     }
-if (habitData == null){}
-else{
+
+    // One entry per date (real log preferred over partial placeholder),
+    // plus a duplicate flag for the error state.
+    val entriesByDate = remember(habitData) {
+        val result = HashMap<LocalDate, Pair<HabitCompletionEntity?, Boolean>>()
+        habitData?.groupBy { it.completionDate }?.forEach { (date, entries) ->
+            val best = entries.firstOrNull { !it.isPartial() } ?: entries.first()
+            result[date] = Pair(best, entries.size > 1)
+        }
+        result
+    }
+
+    if (habitData == null) return
+
     Column {
-        //Text("first visible Month ${calendarState.firstVisibleMonth.yearMonth} \n last visibleMonth: ${calendarState.lastVisibleMonth.yearMonth} \n startMonth ${calendarState.startMonth} \n endMonth ${calendarState.endMonth}")
         HeatMapCalendar(
             weekHeaderPosition = HeatMapWeekHeaderPosition.End,
             weekHeader = { weekDay ->
                 Row(
-                    Modifier
-
-                        .height((gridHeight / 8).dp),
+                    Modifier.height((gridHeight / 8).dp),
                     horizontalArrangement = Arrangement.Start
                 ) {
                     Spacer(Modifier.width(5.dp))
-                    Text(
-                        weekDay.name.slice(0..2),
-                        fontSize = 15.sp
-                    )
-
-
+                    Text(weekDay.name.slice(0..2), fontSize = 15.sp)
                 }
             },
             monthHeader = {
-
                 if (LocalDate.now().yearMonth != it.yearMonth) {
                     Column(
                         Modifier.height((gridHeight / 8).dp),
@@ -129,83 +124,54 @@ else{
                 .fillMaxWidth(),
             state = calendarState,
             dayContent = { day, heatMapWeek ->
-                var suffix = ""
-                var hasNote = false
-                var dayState = ""
-                val datesMatching = habitData.filter { it.completionDate == day.date }
-                var habitCompletionEntity:  HabitCompletionEntity? = null
-                if (datesMatching.size > 1) {
-                    dayState = "error"
-                } else if (datesMatching.size == 1) {
-                    hasNote = datesMatching[0].hasNote()
-                    habitCompletionEntity = datesMatching[0]
-                    suffix= if (day.date > dateToday){"Disabled"}else{""}
-                    
-                    val isCompleted = if (habitEntity != null) {
-                        habitEntity.isCompleted(habitCompletionEntity)
-                    } else {
-                        habitCompletionEntity.repetitionsOnThisDay > 0
-                    }
+                val match = entriesByDate[day.date]
+                val entity = match?.first
+                val hasMultiple = match?.second == true
 
-                    if (habitEntity?.isNegative == true) {
-                        // Negative Habit: 
-                        // If stays under limit -> Absolute (Success)
-                        // If goes over limit -> Failed (Failure)
-                        dayState = if (isCompleted) "absolute" else "failed"
-                    } else {
-                        // Positive Habit:
-                        // If meets or exceeds goal -> Absolute (Success)
-                        // If some progress but not goal -> Partial (Partial)
-                        dayState = if (isCompleted) {
-                             if (habitEntity != null && habitCompletionEntity.repetitionsOnThisDay > habitEntity.repetitionPerDay) "absoluteMore" else "absolute"
-                        } else {
-                             "partial"
-                        }
-                    }
-                    
-                    dayState += suffix
-                } else {
-                    if (day.date > dateToday) {
-                        dayState = "incompleteDisabled"
-                        suffix = "Disabled"
-                    } else {
-                        dayState = "incomplete"
-                    }
-
+                val state: DayState = when {
+                    hasMultiple -> DayState.Error
+                    habitEntity != null -> resolveDayState(habitEntity, entity, day.date, dateToday)
+                    entity != null && entity.repetitionsOnThisDay > 0 -> DayState.Absolute
+                    day.date > dateToday -> DayState.IncompleteDisabled
+                    else -> DayState.Incomplete
                 }
-                if ((dayState != "incompleteDisabled" && dayState != "absoluteDisabled" && dayState != "partialDisabled") || heatMapWeek.days.any { it.date == LocalDate.now() }) {
+
+                // Intensity = how much of the target was logged. Negative habits
+                // shade uniformly (any within-limit day is equally clean).
+                val intensity = when {
+                    habitEntity == null || habitEntity.isNegative -> 1f
+                    entity == null || habitEntity.repetitionPerDay <= 0.0 -> 0f
+                    else ->
+                        (entity.repetitionsOnThisDay / habitEntity.repetitionPerDay)
+                            .toFloat().coerceIn(0f, 1f)
+                }
+
+                val hideCell = state.isDisabled &&
+                    !heatMapWeek.days.any { it.date == LocalDate.now() }
+
+                if (!hideCell) {
                     Box(
                         Modifier
-
                             .height((gridHeight / 8).dp)
                             .aspectRatio(1f),
-
-                        ) {
+                    ) {
                         Box(Modifier.padding((gridHeight / 80).dp)) {
-                            GridDayItem(hasNote = hasNote,
-                                state = dayState,
-                                incrementHabit = { incrementHabit(day.date) },
-                                deleteHabit = { deleteHabit(day.date) },
+                            GridDayItem(
+                                state = state,
+                                intensity = intensity,
                                 date = day.date,
                                 showDate = showDate,
-                                interactive =  suffix != "Disabled" && interactive,
+                                interactive = !state.isDisabled && interactive && state != DayState.Error,
+                                hasNote = entity?.hasNote() == true,
+                                incrementHabit = { incrementHabit(day.date) },
+                                unSkipHabit = { unSkipHabit(day.date) },
                                 dialogueComposable = { visible, onDismiss ->
-                                    dialogueComposable(
-                                        visible,
-                                        onDismiss,
-                                        habitCompletionEntity,
-                                        day.date
-                                    )
-                                },
-                                skipHabit = { skipHabit(day.date) },
-                                unSkipHabit = { unSkipHabit(day.date) }
+                                    dialogueComposable(visible, onDismiss, entity, day.date)
+                                }
                             )
                         }
                     }
-
                 }
             })
-
-
-    }}
+    }
 }

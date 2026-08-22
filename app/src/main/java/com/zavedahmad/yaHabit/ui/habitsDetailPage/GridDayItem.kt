@@ -1,6 +1,5 @@
 package com.zavedahmad.yaHabit.ui.habitsDetailPage
 
-import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,127 +21,81 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.zavedahmad.yaHabit.database.entities.DayState
 import java.time.LocalDate
-import kotlin.collections.List
 
-// Done implement note also
+private val FailedRed = Color(0xFFF44336)
+
+/**
+ * Heat-map cell colours. Met days shade by [intensity] (reps / target),
+ * so heavier days read darker - GitHub-contribution style.
+ */
+private data class GridVisuals(val bg: Color, val noteDot: Color, val text: Color)
+
+private fun resolveGridVisuals(state: DayState, cs: ColorScheme, intensity: Float): GridVisuals {
+    val bg = when (state) {
+        DayState.Absolute, DayState.AbsoluteMore ->
+            cs.primary.copy(alpha = 0.45f + 0.55f * intensity.coerceIn(0f, 1f))
+        DayState.Partial ->
+            cs.primary.copy(alpha = 0.12f + 0.28f * intensity.coerceIn(0f, 1f))
+        DayState.NegativeCount ->
+            cs.primary.copy(alpha = 0.60f)
+        DayState.Failed -> FailedRed.copy(alpha = 0.90f)
+        DayState.FailedDisabled -> FailedRed.copy(alpha = 0.25f)
+        DayState.Skip -> cs.tertiaryContainer
+        DayState.NotNeeded -> cs.surfaceVariant.copy(alpha = 0.5f)
+        DayState.Note -> cs.secondaryContainer
+        DayState.Incomplete -> cs.surfaceVariant.copy(alpha = 0.6f)
+        DayState.IncompleteDisabled -> cs.inverseSurface.copy(alpha = 0.05f)
+        DayState.AbsoluteDisabled -> cs.inverseSurface.copy(alpha = 0.12f)
+        DayState.AbsoluteMoreDisabled -> cs.inverseSurface.copy(alpha = 0.10f)
+        DayState.PartialDisabled, DayState.NegativeCountDisabled ->
+            cs.inverseSurface.copy(alpha = 0.08f)
+        DayState.NotNeededDisabled -> cs.surfaceVariant.copy(alpha = 0.25f)
+        DayState.NoteDisabled -> cs.secondaryContainer.copy(alpha = 0.3f)
+        DayState.SkipDisabled -> cs.tertiaryContainer.copy(alpha = 0.3f)
+        DayState.Error -> cs.error
+    }
+    val text = if (bg.luminance() > 0.5f) Color(0xFF1C1B1F) else Color.White
+    return GridVisuals(bg, noteDot = if (bg.luminance() > 0.5f) cs.tertiary else cs.tertiaryContainer, text = text)
+}
+
 @Composable
 fun GridDayItem(
-    state: String = "error",
-    incrementHabit: () -> Unit = {},
+    state: DayState,
+    intensity: Float = 1f,
     date: LocalDate,
-    deleteHabit: () -> Unit = {},
     showDate: Boolean = false,
     interactive: Boolean = false,
-    skipHabit: () -> Unit,
     hasNote: Boolean = false,
-    unSkipHabit: () -> Unit,
+    incrementHabit: () -> Unit = {},
+    unSkipHabit: () -> Unit = {},
     dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit
 ) {
     val isDialogVisible = remember { mutableStateOf(false) }
-    var buttonAction: List<() -> Unit> = listOf({}, {})
-    var textColor = MaterialTheme.colorScheme.onError
     dialogueComposable(isDialogVisible.value, { isDialogVisible.value = false })
-    var bgColor: Color
-    var noteIndicatorColor: Color
-    when (state) {
-        "absolute" -> {
-            bgColor = MaterialTheme.colorScheme.primary
-            textColor = MaterialTheme.colorScheme.onPrimary
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.onPrimary
 
-        }
+    val cs = MaterialTheme.colorScheme
+    val visuals = remember(state, cs, intensity) { resolveGridVisuals(state, cs, intensity) }
 
-        "absoluteMore", "absoluteLess" -> {
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.7f)
-            textColor = MaterialTheme.colorScheme.primary
-            buttonAction = listOf(skipHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
-        }
-
-        "absoluteDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.8f)
-            textColor = MaterialTheme.colorScheme.onSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "partial" -> {
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-
-            bgColor = MaterialTheme.colorScheme.primaryContainer.copy(0.3f)
-            textColor = MaterialTheme.colorScheme.primary
-            noteIndicatorColor = MaterialTheme.colorScheme.primary
-
-
-        }
-
-        "partialDisabled" -> {
-
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.1f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
-
-        }
-
-
-        "incompleteDisabled" -> {
-
-            bgColor = MaterialTheme.colorScheme.inverseSurface.copy(0.05f)
-            textColor = MaterialTheme.colorScheme.inverseOnSurface
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiaryContainer
-
-        }
-
-        "incomplete", "empty" -> {
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.surfaceVariant
-            noteIndicatorColor = MaterialTheme.colorScheme.tertiary
-
-
-        }
-
-        "skip" -> {
-            buttonAction = listOf(unSkipHabit, { isDialogVisible.value = true })
-            bgColor = MaterialTheme.colorScheme.tertiaryContainer
-            textColor = MaterialTheme.colorScheme.onTertiaryContainer
-            noteIndicatorColor = MaterialTheme.colorScheme.onTertiaryContainer
-
-        }
-        "failed" -> {
-            bgColor = Color(0xFFF44336)
-            textColor = Color.White
-            buttonAction = listOf(incrementHabit, { isDialogVisible.value = true })
-            noteIndicatorColor = Color.White
-        }
-        else -> {
-            bgColor = MaterialTheme.colorScheme.error
-            noteIndicatorColor = MaterialTheme.colorScheme.onError
-
-        }
-
-
+    val primaryAction: () -> Unit = when {
+        state == DayState.Skip -> unSkipHabit
+        state.isDisabled || state == DayState.Error -> ({})
+        else -> incrementHabit
     }
 
     val modifier = if (interactive) {
-        Modifier.combinedClickable(onClick = {
-            buttonAction[0]()
-            println("$state This is state")
-        }, onLongClick = buttonAction[1])
+        Modifier.combinedClickable(
+            onClick = primaryAction,
+            onLongClick = { isDialogVisible.value = true }
+        )
     } else Modifier
-
 
     Box(
         modifier
             .fillMaxSize()
             .clip(shape = RoundedCornerShape(5.dp))
-            .background(color = bgColor),
+            .background(color = visuals.bg),
         contentAlignment = Alignment.BottomEnd
     ) {
         if (hasNote && interactive) {
@@ -153,16 +104,13 @@ fun GridDayItem(
                 modifier = Modifier
                     .size(15.dp)
                     .padding(3.dp),
-
                 shadowElevation = 100.dp,
-                color = noteIndicatorColor
+                color = visuals.noteDot
             ) {}
-
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-
             if (showDate) {
-                Text(date.dayOfMonth.toString(), color = textColor)
+                Text(date.dayOfMonth.toString(), color = visuals.text)
             }
         }
     }
