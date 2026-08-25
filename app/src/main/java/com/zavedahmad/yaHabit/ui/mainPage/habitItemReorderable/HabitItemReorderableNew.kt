@@ -257,6 +257,9 @@ fun HabitItemReorderableNew(
                         Icon(Icons.Default.DragHandle, contentDescription = "Reorder")
                     }
                 }
+                if (!isReorderableMode) {
+                    HabitActionsDialogue(habit, viewModel, backStack, showDeleteDialog)
+                }
                 /*IconButton(
                     modifier = with(reorderableListScope) {
                         Modifier.draggableHandle(
@@ -326,25 +329,6 @@ fun HabitItemReorderableNew(
                     )
 
 
-                    Spacer(Modifier.Companion.height(20.dp))
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
-
-                    Column(
-                        Modifier.Companion
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.Companion.Start
-                    ) {
-
-                        Row(
-                            modifier = Modifier.Companion.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column { }
-
-                            HabitActionsDialogue(habit, viewModel, backStack, showDeleteDialog)
-                        }
-                    }
                 }
             }
         }
