@@ -1,6 +1,8 @@
 package com.zavedahmad.yaHabit.widgets.overviewWidget
 
 import android.content.Context
+import android.content.res.Configuration.UI_MODE_NIGHT_MASK
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,6 +39,9 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.materialkolor.Contrast
+import com.materialkolor.dynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
 import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
@@ -60,6 +65,8 @@ class HabitWidgetRepository(private val context: Context, val widgetUpdater: Wid
 class MyAppWidget : GlanceAppWidget(), KoinComponent {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            val isDark = (context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES
+
             GlanceTheme {
                 Scaffold {
                     val habitRepository: HabitRepository = get()
@@ -70,7 +77,7 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                     Column(verticalAlignment = Alignment.CenterVertically) {
                         TitleBarWidget("Habits")
                         if (habits.value.isNotEmpty()) {
-                            HabitItemsList(habits.value, todayCompletions.value, habitRepository)
+                            HabitItemsList(habits.value, todayCompletions.value, habitRepository, isDark)
                         } else {
                             Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
@@ -89,8 +96,6 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
     }
 }
 
-private val White = Color.White
-
 private data class WidgetVisuals(
     val bgColor: ColorProvider,
     val textColor: ColorProvider,
@@ -100,39 +105,67 @@ private data class WidgetVisuals(
 private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
 
 @Composable
-private fun resolveWidgetVisuals(state: DayState, habitColor: Color): WidgetVisuals {
+private fun resolveWidgetVisuals(state: DayState, habitColor: Color, isDark: Boolean): WidgetVisuals {
     fun cp(c: Color) = ColorProvider(c)
 
-    val bg = when (state) {
-        // Disabled states — muted version of habit color
-        DayState.AbsoluteDisabled, DayState.AbsoluteMoreDisabled,
-        DayState.PartialDisabled, DayState.NegativeCountDisabled,
-        DayState.NotNeededDisabled, DayState.SkipDisabled,
-        DayState.NoteDisabled, DayState.FailedDisabled,
-        DayState.IncompleteDisabled -> cp(habitColor.copy(alpha = 0.35f))
-        // All active states — full habit color
-        else -> cp(habitColor)
-    }
+    val scheme = dynamicColorScheme(
+        primary = habitColor,
+        isDark = isDark,
+        isAmoled = false,
+        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+        contrastLevel = Contrast.Medium.value
+    )
 
-    val iconKind = when (state) {
-        DayState.Absolute, DayState.AbsoluteMore,
-        DayState.NotNeeded, DayState.NotNeededDisabled -> WidgetIconKind.Check
-        DayState.Partial, DayState.NegativeCount,
-        DayState.Failed, DayState.Error,
-        DayState.AbsoluteMoreDisabled, DayState.PartialDisabled,
-        DayState.NegativeCountDisabled, DayState.FailedDisabled -> WidgetIconKind.Number
-        DayState.Skip, DayState.SkipDisabled -> WidgetIconKind.DoubleArrow
-        else -> WidgetIconKind.Close
-    }
+    return when (state) {
+        DayState.Absolute ->
+            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), WidgetIconKind.Check)
+        DayState.AbsoluteMore ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.3f)), cp(scheme.primary), WidgetIconKind.Number)
+        DayState.Partial ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), WidgetIconKind.Number)
+        DayState.NegativeCount ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), WidgetIconKind.Number)
+        DayState.NotNeeded ->
+            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.3f)), cp(scheme.primary.copy(alpha = 0.5f)), WidgetIconKind.Check)
+        DayState.Skip ->
+            WidgetVisuals(cp(scheme.tertiaryContainer), cp(scheme.onTertiaryContainer), WidgetIconKind.DoubleArrow)
+        DayState.Note ->
+            WidgetVisuals(cp(scheme.secondaryContainer), cp(scheme.onSecondaryContainer), WidgetIconKind.Close)
+        DayState.Failed ->
+            WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.2f)), cp(Color(0xFFF44336)), WidgetIconKind.Number)
+        DayState.Incomplete ->
+            WidgetVisuals(cp(scheme.surfaceVariant), cp(scheme.onSurfaceVariant), WidgetIconKind.Close)
+        DayState.Error ->
+            WidgetVisuals(cp(scheme.error), cp(scheme.onError), WidgetIconKind.Close)
 
-    return WidgetVisuals(bg, cp(White), iconKind)
+        // Disabled variants — muted versions
+        DayState.AbsoluteDisabled ->
+            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), WidgetIconKind.Check)
+        DayState.AbsoluteMoreDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
+        DayState.PartialDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
+        DayState.NegativeCountDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
+        DayState.NotNeededDisabled ->
+            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.3f)), WidgetIconKind.Check)
+        DayState.SkipDisabled ->
+            WidgetVisuals(cp(scheme.tertiaryContainer.copy(alpha = 0.4f)), cp(scheme.onTertiaryContainer.copy(alpha = 0.5f)), WidgetIconKind.DoubleArrow)
+        DayState.NoteDisabled ->
+            WidgetVisuals(cp(scheme.secondaryContainer.copy(alpha = 0.3f)), cp(scheme.onSecondaryContainer.copy(alpha = 0.5f)), WidgetIconKind.Close)
+        DayState.FailedDisabled ->
+            WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.1f)), cp(Color(0xFFF44336).copy(alpha = 0.3f)), WidgetIconKind.Number)
+        DayState.IncompleteDisabled ->
+            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.1f)), cp(scheme.onSurfaceVariant.copy(alpha = 0.3f)), WidgetIconKind.Close)
+    }
 }
 
 @Composable
 private fun HabitItemsList(
     habits: List<HabitEntity>,
     todayCompletions: Map<Int, HabitCompletionEntity?>,
-    habitRepository: HabitRepository
+    habitRepository: HabitRepository,
+    isDark: Boolean
 ) {
     val today = LocalDate.now()
 
@@ -141,7 +174,7 @@ private fun HabitItemsList(
             val habitCompletionEntity = todayCompletions[habit.id]
             val coroutineScope = rememberCoroutineScope()
             val state = resolveDayState(habit, habitCompletionEntity, today, today)
-            val visuals = resolveWidgetVisuals(state, habit.color)
+            val visuals = resolveWidgetVisuals(state, habit.color, isDark)
             val repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0
 
             val buttonAction: () -> Unit = when (state) {
@@ -163,7 +196,6 @@ private fun HabitItemsList(
                     }
                 }
                 DayState.NotNeeded -> {{}}
-                // Completed habits — tap to skip (undo mechanism)
                 DayState.Absolute, DayState.AbsoluteMore -> {
                     {
                         coroutineScope.launch(Dispatchers.IO) {
@@ -175,7 +207,6 @@ private fun HabitItemsList(
                         }
                     }
                 }
-                // Incomplete/Partial — tap to complete to target
                 DayState.Incomplete, DayState.Partial -> {
                     {
                         coroutineScope.launch(Dispatchers.IO) {
@@ -187,7 +218,6 @@ private fun HabitItemsList(
                         }
                     }
                 }
-                // Negative habits — tap to log an increment
                 DayState.NegativeCount, DayState.Failed -> {
                     {
                         coroutineScope.launch(Dispatchers.IO) {
@@ -198,7 +228,6 @@ private fun HabitItemsList(
                         }
                     }
                 }
-                // Disabled states — no action
                 else -> {{}}
             }
 

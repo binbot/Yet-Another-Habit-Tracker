@@ -48,6 +48,9 @@ dependencies {
     implementation(project(":common"))
     implementation("androidx.glance:glance-appwidget:1.1.1")
     implementation("androidx.glance:glance-material3:1.1.1")
+    implementation("com.materialkolor:material-kolor:3.0.0-beta07")
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.material3)
 
 //    koin
     val koin_version = "4.0.3"
