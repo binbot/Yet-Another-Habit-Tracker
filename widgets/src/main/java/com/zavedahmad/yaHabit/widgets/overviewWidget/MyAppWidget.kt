@@ -89,9 +89,6 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
     }
 }
 
-private val Green = Color(0xFF4CAF50)
-private val GreenDark = Color(0xFF388E3C)
-private val Gray = Color(0xFF757575)
 private val Teal = Color(0xFF009688)
 private val LightGray = Color(0xFFE0E0E0)
 private val DarkGray = Color(0xFF616161)
@@ -107,18 +104,21 @@ private data class WidgetVisuals(
 private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
 
 @Composable
-private fun resolveWidgetVisuals(state: DayState): WidgetVisuals {
+private fun resolveWidgetVisuals(state: DayState, habitColor: Color): WidgetVisuals {
     fun cp(c: Color) = ColorProvider(c)
+
+    val habitDark = habitColor.copy(alpha = 0.8f)
+    val habitLight = habitColor.copy(alpha = 0.25f)
 
     return when (state) {
         DayState.Absolute ->
-            WidgetVisuals(cp(Green), cp(White), WidgetIconKind.Check)
+            WidgetVisuals(cp(habitColor), cp(White), WidgetIconKind.Check)
         DayState.AbsoluteMore ->
-            WidgetVisuals(cp(GreenDark), cp(White), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitDark), cp(White), WidgetIconKind.Number)
         DayState.Partial ->
-            WidgetVisuals(cp(Gray), cp(White), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitLight), cp(habitColor), WidgetIconKind.Number)
         DayState.NegativeCount ->
-            WidgetVisuals(cp(Gray), cp(White), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitLight), cp(habitColor), WidgetIconKind.Number)
         DayState.NotNeeded ->
             WidgetVisuals(cp(LightGray), cp(DarkGray), WidgetIconKind.Check)
         DayState.Skip ->
@@ -134,17 +134,17 @@ private fun resolveWidgetVisuals(state: DayState): WidgetVisuals {
 
         // Disabled variants — muted versions
         DayState.AbsoluteDisabled ->
-            WidgetVisuals(cp(Green.copy(alpha = 0.4f)), cp(White.copy(alpha = 0.6f)), WidgetIconKind.Check)
+            WidgetVisuals(cp(habitColor.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Check)
         DayState.AbsoluteMoreDisabled ->
-            WidgetVisuals(cp(GreenDark.copy(alpha = 0.4f)), cp(White.copy(alpha = 0.6f)), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitDark.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Number)
         DayState.PartialDisabled ->
-            WidgetVisuals(cp(Gray.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitLight.copy(alpha = 0.5f)), cp(habitColor.copy(alpha = 0.4f)), WidgetIconKind.Number)
         DayState.NegativeCountDisabled ->
-            WidgetVisuals(cp(Gray.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Number)
+            WidgetVisuals(cp(habitLight.copy(alpha = 0.5f)), cp(habitColor.copy(alpha = 0.4f)), WidgetIconKind.Number)
         DayState.NotNeededDisabled ->
             WidgetVisuals(cp(LightGray.copy(alpha = 0.5f)), cp(DarkGray.copy(alpha = 0.5f)), WidgetIconKind.Check)
         DayState.SkipDisabled ->
-            WidgetVisuals(cp(Teal.copy(alpha = 0.4f)), cp(White.copy(alpha = 0.6f)), WidgetIconKind.DoubleArrow)
+            WidgetVisuals(cp(Teal.copy(alpha = 0.4f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.DoubleArrow)
         DayState.NoteDisabled ->
             WidgetVisuals(cp(LightGray.copy(alpha = 0.5f)), cp(DarkGray.copy(alpha = 0.5f)), WidgetIconKind.Close)
         DayState.FailedDisabled ->
@@ -167,7 +167,7 @@ private fun HabitItemsList(
             val habitCompletionEntity = todayCompletions[habit.id]
             val coroutineScope = rememberCoroutineScope()
             val state = resolveDayState(habit, habitCompletionEntity, today, today)
-            val visuals = resolveWidgetVisuals(state)
+            val visuals = resolveWidgetVisuals(state, habit.color)
             val repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0
 
             val buttonAction: () -> Unit = when (state) {
