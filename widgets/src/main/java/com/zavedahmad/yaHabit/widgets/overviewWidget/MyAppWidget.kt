@@ -89,10 +89,6 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
     }
 }
 
-private val Teal = Color(0xFF009688)
-private val LightGray = Color(0xFFE0E0E0)
-private val DarkGray = Color(0xFF616161)
-private val Red = Color(0xFFF44336)
 private val White = Color.White
 
 private data class WidgetVisuals(
@@ -107,51 +103,29 @@ private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
 private fun resolveWidgetVisuals(state: DayState, habitColor: Color): WidgetVisuals {
     fun cp(c: Color) = ColorProvider(c)
 
-    val habitDark = habitColor.copy(alpha = 0.8f)
-    val habitLight = habitColor.copy(alpha = 0.25f)
-
-    return when (state) {
-        DayState.Absolute ->
-            WidgetVisuals(cp(habitColor), cp(White), WidgetIconKind.Check)
-        DayState.AbsoluteMore ->
-            WidgetVisuals(cp(habitDark), cp(White), WidgetIconKind.Number)
-        DayState.Partial ->
-            WidgetVisuals(cp(habitLight), cp(habitColor), WidgetIconKind.Number)
-        DayState.NegativeCount ->
-            WidgetVisuals(cp(habitLight), cp(habitColor), WidgetIconKind.Number)
-        DayState.NotNeeded ->
-            WidgetVisuals(cp(LightGray), cp(DarkGray), WidgetIconKind.Check)
-        DayState.Skip ->
-            WidgetVisuals(cp(Teal), cp(White), WidgetIconKind.DoubleArrow)
-        DayState.Note ->
-            WidgetVisuals(cp(LightGray), cp(DarkGray), WidgetIconKind.Close)
-        DayState.Failed ->
-            WidgetVisuals(cp(Red), cp(White), WidgetIconKind.Number)
-        DayState.Incomplete ->
-            WidgetVisuals(cp(LightGray), cp(DarkGray), WidgetIconKind.Close)
-        DayState.Error ->
-            WidgetVisuals(cp(Red), cp(White), WidgetIconKind.Close)
-
-        // Disabled variants — muted versions
-        DayState.AbsoluteDisabled ->
-            WidgetVisuals(cp(habitColor.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Check)
-        DayState.AbsoluteMoreDisabled ->
-            WidgetVisuals(cp(habitDark.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Number)
-        DayState.PartialDisabled ->
-            WidgetVisuals(cp(habitLight.copy(alpha = 0.5f)), cp(habitColor.copy(alpha = 0.4f)), WidgetIconKind.Number)
-        DayState.NegativeCountDisabled ->
-            WidgetVisuals(cp(habitLight.copy(alpha = 0.5f)), cp(habitColor.copy(alpha = 0.4f)), WidgetIconKind.Number)
-        DayState.NotNeededDisabled ->
-            WidgetVisuals(cp(LightGray.copy(alpha = 0.5f)), cp(DarkGray.copy(alpha = 0.5f)), WidgetIconKind.Check)
-        DayState.SkipDisabled ->
-            WidgetVisuals(cp(Teal.copy(alpha = 0.4f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.DoubleArrow)
-        DayState.NoteDisabled ->
-            WidgetVisuals(cp(LightGray.copy(alpha = 0.5f)), cp(DarkGray.copy(alpha = 0.5f)), WidgetIconKind.Close)
-        DayState.FailedDisabled ->
-            WidgetVisuals(cp(Red.copy(alpha = 0.3f)), cp(White.copy(alpha = 0.5f)), WidgetIconKind.Number)
-        DayState.IncompleteDisabled ->
-            WidgetVisuals(cp(LightGray.copy(alpha = 0.5f)), cp(DarkGray.copy(alpha = 0.5f)), WidgetIconKind.Close)
+    val bg = when (state) {
+        // Disabled states — muted version of habit color
+        DayState.AbsoluteDisabled, DayState.AbsoluteMoreDisabled,
+        DayState.PartialDisabled, DayState.NegativeCountDisabled,
+        DayState.NotNeededDisabled, DayState.SkipDisabled,
+        DayState.NoteDisabled, DayState.FailedDisabled,
+        DayState.IncompleteDisabled -> cp(habitColor.copy(alpha = 0.35f))
+        // All active states — full habit color
+        else -> cp(habitColor)
     }
+
+    val iconKind = when (state) {
+        DayState.Absolute, DayState.AbsoluteMore,
+        DayState.NotNeeded, DayState.NotNeededDisabled -> WidgetIconKind.Check
+        DayState.Partial, DayState.NegativeCount,
+        DayState.Failed, DayState.Error,
+        DayState.AbsoluteMoreDisabled, DayState.PartialDisabled,
+        DayState.NegativeCountDisabled, DayState.FailedDisabled -> WidgetIconKind.Number
+        DayState.Skip, DayState.SkipDisabled -> WidgetIconKind.DoubleArrow
+        else -> WidgetIconKind.Close
+    }
+
+    return WidgetVisuals(bg, cp(White), iconKind)
 }
 
 @Composable
