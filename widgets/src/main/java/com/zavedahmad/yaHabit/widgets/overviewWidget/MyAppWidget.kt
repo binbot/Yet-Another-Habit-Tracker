@@ -134,7 +134,7 @@ private fun resolveWidgetVisuals(state: DayState, habitColor: Color, isDark: Boo
         DayState.Failed ->
             WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.2f)), cp(Color(0xFFF44336)), WidgetIconKind.Number)
         DayState.Incomplete ->
-            WidgetVisuals(cp(scheme.surfaceVariant), cp(scheme.onSurfaceVariant), WidgetIconKind.Close)
+            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), WidgetIconKind.Close)
         DayState.Error ->
             WidgetVisuals(cp(scheme.error), cp(scheme.onError), WidgetIconKind.Close)
 
@@ -156,7 +156,7 @@ private fun resolveWidgetVisuals(state: DayState, habitColor: Color, isDark: Boo
         DayState.FailedDisabled ->
             WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.1f)), cp(Color(0xFFF44336).copy(alpha = 0.3f)), WidgetIconKind.Number)
         DayState.IncompleteDisabled ->
-            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.1f)), cp(scheme.onSurfaceVariant.copy(alpha = 0.3f)), WidgetIconKind.Close)
+            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), WidgetIconKind.Close)
     }
 }
 
