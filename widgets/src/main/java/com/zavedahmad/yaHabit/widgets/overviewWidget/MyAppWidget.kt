@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -36,9 +35,10 @@ import androidx.glance.text.FontStyle
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
-import com.zavedahmad.yaHabit.database.entities.state
+import com.zavedahmad.yaHabit.database.entities.resolveDayState
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
 import com.zavedahmad.yaHabit.widgets.R
 import com.zavedahmad.yahabit.common.WidgetUpdater
@@ -49,21 +49,17 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import java.time.LocalDate
 
-
-// todo open app when clicked on icon or on nothing page
 class HabitWidgetRepository(private val context: Context, val widgetUpdater: WidgetUpdater) {
     suspend fun update() {
         widgetUpdater.updateWidgets()
     }
-
 }
 
 class MyAppWidget : GlanceAppWidget(), KoinComponent {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             GlanceTheme {
-                Scaffold() {
-
+                Scaffold {
                     val habitRepository: HabitRepository = get()
                     val habits = habitRepository.getHabitsFlowSortedByIndex()
                         .collectAsState(initial = emptyList())
@@ -71,7 +67,7 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                         .collectAsState(initial = emptyMap())
                     Column(verticalAlignment = Alignment.CenterVertically) {
                         TitleBarWidget("Habits")
-                        if (!habits.value.isEmpty()) {
+                        if (habits.value.isNotEmpty()) {
                             HabitItemsList(habits.value, todayCompletions.value, habitRepository)
                         } else {
                             Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -85,12 +81,62 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                             }
                         }
                     }
-
-
                 }
             }
         }
     }
+}
+
+private data class WidgetVisuals(
+    val bgColor: androidx.glance.unit.ColorProvider,
+    val textColor: androidx.glance.unit.ColorProvider,
+    val iconKind: WidgetIconKind
+)
+
+private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
+
+@Composable
+private fun resolveWidgetVisuals(state: DayState): WidgetVisuals = when (state) {
+    DayState.Absolute ->
+        WidgetVisuals(GlanceTheme.colors.primary, GlanceTheme.colors.onPrimary, WidgetIconKind.Check)
+    DayState.AbsoluteMore ->
+        WidgetVisuals(GlanceTheme.colors.primary, GlanceTheme.colors.onPrimary, WidgetIconKind.Number)
+    DayState.Partial ->
+        WidgetVisuals(GlanceTheme.colors.inverseSurface, GlanceTheme.colors.onPrimary, WidgetIconKind.Check)
+    DayState.NegativeCount ->
+        WidgetVisuals(GlanceTheme.colors.inverseSurface, GlanceTheme.colors.onPrimary, WidgetIconKind.Number)
+    DayState.NotNeeded ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Check)
+    DayState.Skip ->
+        WidgetVisuals(GlanceTheme.colors.tertiary, GlanceTheme.colors.onPrimary, WidgetIconKind.DoubleArrow)
+    DayState.Note ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Close)
+    DayState.Failed ->
+        WidgetVisuals(GlanceTheme.colors.error, GlanceTheme.colors.onError, WidgetIconKind.Number)
+    DayState.Incomplete ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Close)
+    DayState.Error ->
+        WidgetVisuals(GlanceTheme.colors.error, GlanceTheme.colors.onError, WidgetIconKind.Close)
+
+    // Disabled variants — dimmed versions
+    DayState.AbsoluteDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Check)
+    DayState.AbsoluteMoreDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Number)
+    DayState.PartialDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Number)
+    DayState.NegativeCountDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Number)
+    DayState.NotNeededDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Check)
+    DayState.SkipDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.DoubleArrow)
+    DayState.NoteDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Close)
+    DayState.FailedDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Number)
+    DayState.IncompleteDisabled ->
+        WidgetVisuals(GlanceTheme.colors.surfaceVariant, GlanceTheme.colors.onSurface, WidgetIconKind.Close)
 }
 
 @Composable
@@ -99,175 +145,124 @@ private fun HabitItemsList(
     todayCompletions: Map<Int, HabitCompletionEntity?>,
     habitRepository: HabitRepository
 ) {
+    val today = LocalDate.now()
+
     LazyColumn {
-
-        items(items = habits.filter { it.isArchived == false }) { habit ->
+        items(items = habits.filter { !it.isArchived }) { habit ->
             val habitCompletionEntity = todayCompletions[habit.id]
-            var buttonAction: () -> Unit = {}
-            var iconComposable: (@Composable () -> Unit) = {}
             val coroutineScope = rememberCoroutineScope()
-            val date = LocalDate.now()
-            var bgColor = GlanceTheme.colors.error
-            var textColor = GlanceTheme.colors.onPrimary
-            var state = habitCompletionEntity?.state()
-            val isLowerOrMoreThanSetFrequency =
-                (habitCompletionEntity?.repetitionsOnThisDay ?: 0.0) != habit.repetitionPerDay
+            val state = resolveDayState(habit, habitCompletionEntity, today, today)
+            val visuals = resolveWidgetVisuals(state)
+            val repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0
 
-            when (state) {
-                "partial" -> {
-                    bgColor = GlanceTheme.colors.inverseSurface
-                    buttonAction = {
-                        coroutineScope.launch {
-                            habitRepository.applyRepetitionForADate(
-                                date = date,
-                                habitId = habit.id,
-                                newRepetitionValue = habit.repetitionPerDay
-                            )
-                        }
-                    }
-
-                    iconComposable = {
-                        Image(
-                            modifier = GlanceModifier.size(24.dp),
-                            provider = ImageProvider(R.drawable.hollowtick),
-                            contentDescription = "partial",
-                            colorFilter = ColorFilter.tint(textColor)
-                        )
-                    }
-                }
-
-                "absolute" -> {
-                    bgColor = GlanceTheme.colors.primary
-                    buttonAction = {
+            val buttonAction: () -> Unit = when {
+                state == DayState.Error -> {{}}
+                state.isDisabled -> {{}}
+                state == DayState.Skip -> {
+                    {
                         coroutineScope.launch(Dispatchers.IO) {
-                            habitRepository.setSkip(
-                                date = date,
-                                habitId = habit.id,
-                                skipValue = true
-                            )
-                        }
-                    }
-
-                    iconComposable = if (!isLowerOrMoreThanSetFrequency) {{
-                        Image(
-                            provider = ImageProvider(R.drawable.baseline_check_24),
-                            contentDescription = "Done",
-                            colorFilter = ColorFilter.tint(textColor)
-                        )
-                    }} else{
-                        { Text(formatNumberToReadable( habitCompletionEntity?.repetitionsOnThisDay ?: 0.0))}
-                    }
-                }
-
-                "skip" -> {
-                    bgColor = GlanceTheme.colors.tertiary
-                    buttonAction = {
-                        coroutineScope.launch(
-                            Dispatchers.IO
-                        ) {
                             habitRepository.applyRepetitionForADate(
-                                date = date,
+                                date = today,
                                 habitId = habit.id,
                                 newRepetitionValue = 0.0
                             )
-
                             habitRepository.setSkip(
-                                date = date,
+                                date = today,
                                 habitId = habit.id,
                                 skipValue = false
                             )
-
                         }
                     }
-                    iconComposable = {
-                        Image(
-                            provider = ImageProvider(R.drawable.outline_keyboard_double_arrow_right_24),
-                            contentDescription = "Skipped",
-                                    colorFilter = ColorFilter.tint(textColor)
-                        )
-                    }
                 }
-
-                "empty" -> {
-                    textColor = GlanceTheme.colors.onSurface
-                    bgColor = GlanceTheme.colors.surfaceVariant
-                    buttonAction = {
-                        coroutineScope.launch {
+                state == DayState.NotNeeded -> {{}}
+                else -> {
+                    {
+                        coroutineScope.launch(Dispatchers.IO) {
                             habitRepository.applyRepetitionForADate(
-                                date = date,
+                                date = today,
                                 habitId = habit.id,
                                 newRepetitionValue = habit.repetitionPerDay
                             )
                         }
-                    }
-                    iconComposable = {
-                        Image(
-                            provider = ImageProvider(R.drawable.outline_close_24),
-                            contentDescription = "Failed",
-                            colorFilter = ColorFilter.tint(textColor)
-                        )
-                    }
-                }
-
-                else -> { // Includes null or any other state
-                    textColor = GlanceTheme.colors.onSurface
-                    bgColor = GlanceTheme.colors.surfaceVariant
-                    buttonAction = {
-                        coroutineScope.launch {
-                            habitRepository.applyRepetitionForADate(
-                                date = date,
-                                habitId = habit.id,
-                                newRepetitionValue = habit.repetitionPerDay
-                            )
-                        }
-                    }
-                    iconComposable = {
-                        Image(
-                            provider = ImageProvider(R.drawable.outline_close_24),
-                            contentDescription = "Pending",
-                            colorFilter = ColorFilter.tint(textColor)
-                        )
                     }
                 }
             }
 
             Column {
                 Row(
-                    GlanceModifier.background(bgColor)
+                    GlanceModifier.background(visuals.bgColor)
                         .cornerRadius(10.dp)
                         .padding(vertical = 5.dp, horizontal = 10.dp)
-                        .fillMaxWidth().height(40.dp).clickable { buttonAction() }, verticalAlignment = Alignment.CenterVertically
-
-                    ) {
-//                    Box(GlanceModifier.background(Color.White).cornerRadius(5.dp)) {
-                        iconComposable()
-//                    }
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .clickable { buttonAction() },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (visuals.iconKind) {
+                        WidgetIconKind.Check -> {
+                            Image(
+                                modifier = GlanceModifier.size(24.dp),
+                                provider = ImageProvider(R.drawable.baseline_check_24),
+                                contentDescription = state.name,
+                                colorFilter = ColorFilter.tint(visuals.textColor)
+                            )
+                        }
+                        WidgetIconKind.Close -> {
+                            Image(
+                                modifier = GlanceModifier.size(24.dp),
+                                provider = ImageProvider(R.drawable.outline_close_24),
+                                contentDescription = state.name,
+                                colorFilter = ColorFilter.tint(visuals.textColor)
+                            )
+                        }
+                        WidgetIconKind.DoubleArrow -> {
+                            Image(
+                                modifier = GlanceModifier.size(24.dp),
+                                provider = ImageProvider(R.drawable.outline_keyboard_double_arrow_right_24),
+                                contentDescription = state.name,
+                                colorFilter = ColorFilter.tint(visuals.textColor)
+                            )
+                        }
+                        WidgetIconKind.Number -> {
+                            Text(
+                                text = formatNumberToReadable(repetitionsOnThisDay),
+                                style = TextStyle(color = visuals.textColor, fontSize = 15.sp)
+                            )
+                        }
+                    }
                     Spacer(GlanceModifier.width(10.dp))
-                    Text(text = habit.name, maxLines = 1, style = TextStyle(color = textColor, fontSize = 15.sp, fontWeight = FontWeight.Medium))
-
+                    Text(
+                        text = habit.name,
+                        maxLines = 1,
+                        style = TextStyle(
+                            color = visuals.textColor,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
                 }
                 Spacer(GlanceModifier.height(5.dp))
-
             }
         }
-
     }
 }
 
 @Composable
 internal fun TitleBarWidget(title: String) {
     Row(
-        GlanceModifier.height(50.dp), verticalAlignment = Alignment.CenterVertically
+        GlanceModifier.height(50.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-
         Image(
-            modifier = GlanceModifier.size(24.dp), provider =
-                ImageProvider(R.drawable.yahabiticonnobg),
+            modifier = GlanceModifier.size(24.dp),
+            provider = ImageProvider(R.drawable.yahabiticonnobg),
             contentDescription = "app Logo"
         )
         Spacer(GlanceModifier.width(10.dp))
         Text(
-            title, maxLines = 1, style = TextStyle(
+            title,
+            maxLines = 1,
+            style = TextStyle(
                 color = GlanceTheme.colors.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
