@@ -1,6 +1,13 @@
 package com.zavedahmad.yaHabit.ui.settingsScreen
 
+import android.Manifest
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +25,7 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.InvertColors
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -46,6 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import com.zavedahmad.yaHabit.Screen
@@ -251,6 +262,8 @@ fun SettingsScreen(
                     }
                 )
             }
+            SettingsHeading("NOTIFICATIONS")
+            NotificationSettingsSection(viewModel)
             SettingsHeading("DATA")
             ExportDatabaseSettingsItem(viewModel)
             ImportDatabaseSettingsItem(viewModel, onDatabaseImport = onDatabaseImport)
@@ -268,6 +281,99 @@ fun SettingsScreen(
         }
 
 
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NotificationSettingsSection(viewModel: SettingsViewModel) {
+    val context = LocalContext.current
+    val notifEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
+    val hourPref by viewModel.defaultReminderHour.collectAsStateWithLifecycle()
+    val minutePref by viewModel.defaultReminderMinute.collectAsStateWithLifecycle()
+    var showPicker by remember { mutableStateOf(false) }
+
+    val enabled = notifEnabled?.value == "true"
+    val hour = hourPref?.value?.toIntOrNull() ?: 9
+    val minute = minutePref?.value?.toIntOrNull() ?: 0
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) viewModel.setNotificationsEnabled(true)
+    }
+
+    SettingsItem(
+        icon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+        title = "Habit reminders",
+        description = if (enabled) "On — default ${String.format("%02d:%02d", hour, minute)}" else "Off",
+        task = {
+            if (!enabled) {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    viewModel.setNotificationsEnabled(true)
+                }
+            } else {
+                viewModel.setNotificationsEnabled(false)
+            }
+        },
+        actions = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(20.dp))
+                Switch(checked = enabled, onCheckedChange = { checked ->
+                    if (checked) {
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            viewModel.setNotificationsEnabled(true)
+                        }
+                    } else {
+                        viewModel.setNotificationsEnabled(false)
+                    }
+                })
+            }
+        }
+    )
+    if (enabled) {
+        SettingsItem(
+            icon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+            title = "Default reminder time",
+            description = String.format("%02d:%02d", hour, minute),
+            task = { showPicker = true }
+        )
+        // Exact alarm permission hint for Android S+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!am.canScheduleExactAlarms()) {
+                SettingsItem(
+                    icon = { Icon(Icons.Outlined.Notifications, contentDescription = null) },
+                    title = "Allow exact alarms",
+                    description = "Required for on-time reminders",
+                    task = {
+                        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+            }
+        }
+    }
+    if (showPicker) {
+        val state = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
+        Dialog(onDismissRequest = { showPicker = false }) {
+            com.zavedahmad.yaHabit.ui.components.CardMyStyle {
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    TimePicker(state = state)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End) {
+                        androidx.compose.material3.TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                        androidx.compose.material3.TextButton(onClick = {
+                            viewModel.setDefaultReminderTime(state.hour, state.minute)
+                            showPicker = false
+                        }) { Text("OK") }
+                    }
+                }
+            }
+        }
     }
 }
 

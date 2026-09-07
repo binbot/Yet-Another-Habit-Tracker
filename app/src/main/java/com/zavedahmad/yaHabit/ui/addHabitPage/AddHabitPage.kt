@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -35,11 +37,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -306,6 +313,8 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                     )
                     Heading("Daily Goal (Sessions/Units)")
                     RepetitionPerDaySelector(viewModel)
+                    Heading("Reminder")
+                    ReminderSection(viewModel)
                     Heading("Color")
                     ColorSelector(viewModel)
                     Spacer(Modifier.height(30.dp))
@@ -325,4 +334,66 @@ private fun Heading(heading: String) {
     HorizontalDivider()
     Spacer(Modifier.height(20.dp))
 
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderSection(viewModel: AddHabitPageViewModel) {
+    val enabled by viewModel.reminderEnabled.collectAsStateWithLifecycle()
+    val hour by viewModel.reminderHour.collectAsStateWithLifecycle()
+    val minute by viewModel.reminderMinute.collectAsStateWithLifecycle()
+    var showPicker by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Daily reminder", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (enabled) "Tap time to change" else "Get notified at your chosen time",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(checked = enabled, onCheckedChange = { viewModel.setReminderEnabled(it) })
+            }
+            if (enabled) {
+                val timeText = if (hour != null && minute != null) String.format("%02d:%02d", hour, minute) else "09:00"
+                Button(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(timeText)
+                }
+                Text(
+                    "Only when still due, max once per day, skipped during quiet 22:00–07:00",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+
+    if (showPicker) {
+        val state = rememberTimePickerState(initialHour = hour ?: 9, initialMinute = minute ?: 0, is24Hour = true)
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showPicker = false }) {
+            Card(shape = RoundedCornerShape(20.dp)) {
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    TimePicker(state = state)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                        TextButton(onClick = {
+                            viewModel.setReminderTime(state.hour, state.minute)
+                            showPicker = false
+                        }) { Text("OK") }
+                    }
+                }
+            }
+        }
+    }
 }
