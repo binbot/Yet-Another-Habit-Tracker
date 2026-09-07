@@ -76,12 +76,20 @@ class AddHabitPageViewModel(
     private val _repetitionPerDay = MutableStateFlow<Double?>(null)
     val repetitionPerDay = _repetitionPerDay.asStateFlow()
 
+    private val _reminderEnabled = MutableStateFlow(false)
+    val reminderEnabled = _reminderEnabled.asStateFlow()
+    private val _reminderHour = MutableStateFlow<Int?>(null)
+    val reminderHour = _reminderHour.asStateFlow()
+    private val _reminderMinute = MutableStateFlow<Int?>(null)
+    val reminderMinute = _reminderMinute.asStateFlow()
+
 
     init {
         collectPreferences()
         collectThemeMode()
 
         getHabitDetails()
+        collectDefaultReminder()
     }
 
     fun setIsNegative(value: Boolean) {
@@ -98,6 +106,38 @@ class AddHabitPageViewModel(
 
     fun setMeasurementUnit(unit: String?) {
         _measurementUnit.value = unit
+    }
+
+    fun setReminderEnabled(enabled: Boolean) {
+        _reminderEnabled.value = enabled
+        if (enabled && _reminderHour.value == null) {
+            // Default to 9:00 if no time set
+            _reminderHour.value = 9
+            _reminderMinute.value = 0
+        }
+    }
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        _reminderHour.value = hour
+        _reminderMinute.value = minute
+        _reminderEnabled.value = true
+    }
+
+    private fun collectDefaultReminder() {
+        viewModelScope.launch(Dispatchers.IO) {
+            preferencesDao.getPreferenceFlow("defaultReminderHour").collect { pref ->
+                if (navKey.habitId == null && _reminderHour.value == null) {
+                    pref?.value?.toIntOrNull()?.let { _reminderHour.value = it }
+                }
+            }
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            preferencesDao.getPreferenceFlow("defaultReminderMinute").collect { pref ->
+                if (navKey.habitId == null && _reminderMinute.value == null) {
+                    pref?.value?.toIntOrNull()?.let { _reminderMinute.value = it }
+                }
+            }
+        }
     }
 
     fun collectPreferences() {
@@ -135,7 +175,10 @@ class AddHabitPageViewModel(
                 cycle = _habitCycle.value ?: 7,
                 measurementUnit = _measurementUnit.value ?: "Unit",
                 repetitionPerDay = _repetitionPerDay.value ?: 1.0,
-                isNegative = _isNegative.value
+                isNegative = _isNegative.value,
+                reminderEnabled = _reminderEnabled.value,
+                reminderHour = _reminderHour.value,
+                reminderMinute = _reminderMinute.value
 
             )
             viewModelScope.launch(Dispatchers.IO) {
@@ -157,7 +200,10 @@ class AddHabitPageViewModel(
                         cycle = _habitCycle.value ?: 7,
                         measurementUnit = _measurementUnit.value ?: "Unit",
                         repetitionPerDay = _repetitionPerDay.value ?: 1.0,
-                        isNegative = _isNegative.value
+                        isNegative = _isNegative.value,
+                        reminderEnabled = _reminderEnabled.value,
+                        reminderHour = _reminderHour.value,
+                        reminderMinute = _reminderMinute.value
                     )
                 )
             }
@@ -203,6 +249,9 @@ class AddHabitPageViewModel(
                     setMeasurementUnit(existingHabitHolder.measurementUnit)
                     setRepetitionPerDay(existingHabitHolder.repetitionPerDay)
                     setIsNegative(existingHabitHolder.isNegative)
+                    _reminderEnabled.value = existingHabitHolder.reminderEnabled
+                    _reminderHour.value = existingHabitHolder.reminderHour
+                    _reminderMinute.value = existingHabitHolder.reminderMinute
                 }
             }
         }
