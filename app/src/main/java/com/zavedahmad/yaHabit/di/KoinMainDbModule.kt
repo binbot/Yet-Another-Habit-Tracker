@@ -10,6 +10,7 @@ import com.zavedahmad.yaHabit.ui.addHabitPage.AddHabitPageViewModel
 import com.zavedahmad.yaHabit.ui.habitsDetailPage.HabitDetailsPageViewModel
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsViewModel
+import com.zavedahmad.yaHabit.notification.NotificationHelper
 import com.zavedahmad.yaHabit.widgets.overviewWidget.HabitWidgetRepository
 import com.zavedahmad.yaHabit.widgets.overviewWidget.WidgetUpdaterImpl
 import com.zavedahmad.yahabit.common.WidgetUpdater
@@ -33,6 +34,7 @@ val mainDBModule = module {
     single { get<MainDatabase>().preferencesDao() }
     single { get<MainDatabase>().habitDao() }
     single { get<MainDatabase>().habitCompletionDao() }
+    single { NotificationHelper(androidContext()) }
     single { PreferencesRepository(get(), get()) }
     single { ImportExportRepository(
         habitDao = get(),
