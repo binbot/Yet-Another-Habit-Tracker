@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -213,18 +214,28 @@ fun HabitItemReorderableNew(
                         Spacer(Modifier.Companion.width(10.dp))
 }
                     }
-                    Text(
-                        habit.name,
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            habit.name,
 
-                        maxLines = 1,
-                        overflow = TextOverflow.Companion.Ellipsis,
-                        style = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 30.sp,
-                            fontWeight = FontWeight.Companion.Bold
-                        ),
-                        modifier = Modifier.alpha(alphaValue)
-                    )
+                            maxLines = 1,
+                            overflow = TextOverflow.Companion.Ellipsis,
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 30.sp,
+                                fontWeight = FontWeight.Companion.Bold
+                            ),
+                            modifier = Modifier.alpha(alphaValue).weight(1f, fill = false)
+                        )
+                        if (habit.reminderEnabled) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "reminder set",
+                                tint = habit.color,
+                                modifier = Modifier.alpha(alphaValue)
+                            )
+                        }
+                    }
                     if (habit.description != "") {
 
                         Text(

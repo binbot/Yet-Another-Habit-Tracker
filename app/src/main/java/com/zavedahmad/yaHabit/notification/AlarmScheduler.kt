@@ -104,11 +104,14 @@ class AlarmScheduler(
         pi.cancel()
     }
 
-    override suspend fun rescheduleAll() {
+    override     suspend fun rescheduleAll() {
         if (!isGlobalEnabled()) {
             // Cancel all if globally disabled
             val all = habitDao.getAllHabits()
             all.forEach { cancel(it.id) }
+            try {
+                (context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(NotificationHelper.SUMMARY_ID)
+            } catch (_: Exception) {}
             return
         }
         val all = habitDao.getAllHabits()
