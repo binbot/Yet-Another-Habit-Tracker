@@ -64,4 +64,26 @@ sealed class PreferenceKeys {
             DARK("dark")
         }
     }
+
+    object NotificationsEnabled : PreferenceKeys() {
+        override val key = "notificationsEnabled"
+        override val defaultValue = "false"
+        override val validValues = Values.entries.map { it.value }
+        enum class Values(val value: String) {
+            TRUE("true"),
+            FALSE("false")
+        }
+    }
+
+    object DefaultReminderHour : PreferenceKeys() {
+        override val key = "defaultReminderHour"
+        override val defaultValue = "9"
+        override val validValues = (0..23).map { it.toString() }
+    }
+
+    object DefaultReminderMinute : PreferenceKeys() {
+        override val key = "defaultReminderMinute"
+        override val defaultValue = "0"
+        override val validValues = (0..59).map { it.toString() }
+    }
 }

@@ -21,7 +21,10 @@ class PreferencesRepository (
             PreferenceKeys.ThemeMode.key to PreferenceKeys.ThemeMode.defaultValue,
             PreferenceKeys.FirstDayOfWeek.key to PreferenceKeys.FirstDayOfWeek.defaultValue,
             PreferenceKeys.ShowArchive.key to PreferenceKeys.ShowArchive.defaultValue,
-            PreferenceKeys.ShowActive.key to PreferenceKeys.ShowActive.defaultValue
+            PreferenceKeys.ShowActive.key to PreferenceKeys.ShowActive.defaultValue,
+            PreferenceKeys.NotificationsEnabled.key to PreferenceKeys.NotificationsEnabled.defaultValue,
+            PreferenceKeys.DefaultReminderHour.key to PreferenceKeys.DefaultReminderHour.defaultValue,
+            PreferenceKeys.DefaultReminderMinute.key to PreferenceKeys.DefaultReminderMinute.defaultValue
         )
     }
 
