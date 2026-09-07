@@ -126,7 +126,10 @@ class HabitRepositoryImpl(
                 streakType = habitEntity.streakType,
                 measurementUnit = habitEntity.measurementUnit,
                 repetitionPerDay = habitEntity.repetitionPerDay,
-                isNegative = habitEntity.isNegative
+                isNegative = habitEntity.isNegative,
+                reminderEnabled = habitEntity.reminderEnabled,
+                reminderHour = habitEntity.reminderHour,
+                reminderMinute = habitEntity.reminderMinute
             )
         )
         widgetUpdater.updateWidgets()

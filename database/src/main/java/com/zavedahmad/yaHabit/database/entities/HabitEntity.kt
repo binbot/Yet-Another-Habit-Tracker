@@ -24,7 +24,11 @@ data class HabitEntity(
     @ColumnInfo(defaultValue = "0")
     val isNegative : Boolean = false,
     @ColumnInfo(defaultValue = "0")
-    val isArchived : Boolean = false
+    val isArchived : Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val reminderEnabled : Boolean = false,
+    val reminderHour : Int? = null,
+    val reminderMinute : Int? = null
 
     )
 
