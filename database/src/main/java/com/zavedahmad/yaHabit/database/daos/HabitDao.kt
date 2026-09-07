@@ -24,6 +24,9 @@ interface HabitDao {
     @Query("SELECT * FROM HabitTable")
     fun getHabitsFlow(): Flow<List<HabitEntity>>
 
+    @Query("SELECT * FROM HabitTable")
+    suspend fun getAllHabits(): List<HabitEntity>
+
     @Query("DELETE FROM HabitTable")
     suspend fun deleteAllHabits()
 

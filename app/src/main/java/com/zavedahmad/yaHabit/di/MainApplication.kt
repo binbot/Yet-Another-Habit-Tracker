@@ -2,7 +2,11 @@ package com.zavedahmad.yaHabit.di
 
 import android.app.Application
 
+import com.zavedahmad.yaHabit.notification.AlarmScheduler
 import com.zavedahmad.yaHabit.notification.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext.get
 import org.koin.core.context.startKoin
@@ -18,5 +22,8 @@ class MainApplication : Application(){
         }
         // Create notification channel early (minSdk 26, no compat branching needed)
         get().get<NotificationHelper>().createChannel()
+        CoroutineScope(Dispatchers.IO).launch {
+            try { get().get<AlarmScheduler>().rescheduleAll() } catch (_: Exception) {}
+        }
     }
 }

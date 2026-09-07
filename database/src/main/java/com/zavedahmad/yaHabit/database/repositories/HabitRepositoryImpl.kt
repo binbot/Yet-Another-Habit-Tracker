@@ -16,6 +16,7 @@ import com.zavedahmad.yaHabit.database.entities.onlyPartial
 import com.zavedahmad.yaHabit.database.enums.HabitStreakType
 import com.zavedahmad.yaHabit.database.utils.findHabitClusters
 import com.zavedahmad.yaHabit.database.utils.processDateTriples
+import com.zavedahmad.yaHabit.database.HabitReminderScheduler
 import com.zavedahmad.yahabit.common.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,8 +28,13 @@ class HabitRepositoryImpl(
     val habitDao: HabitDao,
     val habitCompletionDao: HabitCompletionDao,
     val db: MainDatabase,
-    val widgetUpdater: WidgetUpdater
+    val widgetUpdater: WidgetUpdater,
+    val alarmScheduler: HabitReminderScheduler? = null
 ) : HabitRepository {
+    private fun getScheduler(): HabitReminderScheduler? {
+        alarmScheduler?.let { return it }
+        return try { org.koin.core.context.GlobalContext.get().get<HabitReminderScheduler>() } catch (_: Exception) { null }
+    }
     override suspend fun addSampleHabits() {
         val listOfHabits = listOf<HabitEntity>(
             HabitEntity(
@@ -133,6 +139,7 @@ class HabitRepositoryImpl(
             )
         )
         widgetUpdater.updateWidgets()
+        try { getScheduler()?.schedule(habitEntity.copy(id = id.toInt())) } catch (_: Exception) {}
         return id
     }
 
@@ -142,6 +149,10 @@ class HabitRepositoryImpl(
             repairPartials(habitEntity)
         }
         widgetUpdater.updateWidgets()
+        try {
+            val s = getScheduler()
+            if (habitEntity.reminderEnabled) s?.schedule(habitEntity) else s?.cancel(habitEntity.id)
+        } catch (_: Exception) {}
     }
 
     override suspend fun deleteHabit(id: Int) { // this deletes with index check
@@ -153,6 +164,7 @@ class HabitRepositoryImpl(
             habitDao.deleteHabitById(id)
         }
         widgetUpdater.updateWidgets()
+        try { getScheduler()?.cancel(id) } catch (_: Exception) {}
 
     }
 
@@ -381,6 +393,10 @@ class HabitRepositoryImpl(
             }
         }
         widgetUpdater.updateWidgets()
+        // If this date is today and habit became completed, cancel today's reminder
+        if (date == LocalDate.now()) {
+            try { getScheduler()?.onHabitCompleted(habitId) } catch (_: Exception) {}
+        }
 
     }
 
@@ -468,6 +484,9 @@ class HabitRepositoryImpl(
             }
         }
         widgetUpdater.updateWidgets()
+        if (date == LocalDate.now()) {
+            try { getScheduler()?.onHabitCompleted(habitId) } catch (_: Exception) {}
+        }
 
     }
 
@@ -559,11 +578,16 @@ class HabitRepositoryImpl(
     override suspend fun archive(id: Int) {
         habitDao.archive(id = id, true)
         widgetUpdater.updateWidgets()
+        try { getScheduler()?.cancel(id) } catch (_: Exception) {}
     }
 
     override suspend fun unArchive(id: Int) {
         habitDao.archive(id = id, false)
         widgetUpdater.updateWidgets()
+        try {
+            val h = habitDao.getHabitById(id)
+            getScheduler()?.schedule(h)
+        } catch (_: Exception) {}
     }
 
     override suspend fun deleteHabitCompletionEntry(habitId: Int, date: LocalDate) {
