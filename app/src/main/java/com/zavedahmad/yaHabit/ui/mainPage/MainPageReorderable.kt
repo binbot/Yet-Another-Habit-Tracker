@@ -288,7 +288,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             item { }  // spacing
-                            item(key = "routines-header") { SectionHeader("Routines", filteredRoutines.size) }
+                            stickyHeader(key = "routines-header") { SectionHeader("Routines", filteredRoutines.size) }
                             items(filteredRoutines, key = { "routine-${it.id}" }) { routine ->
                                 val scheme = routineColorSchemes[routine.id]
                                 if (scheme != null) {
@@ -309,7 +309,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                                     )
                                 }
                             }
-                            item(key = "habits-header") { SectionHeader("Habits", filteredHabits.size) }
+                            stickyHeader(key = "habits-header") { SectionHeader("Habits", filteredHabits.size) }
                             items(filteredHabits, key = { it.id }) { habit ->
                                 ReorderableItem(
                                     reorderableLazyListState,
@@ -369,9 +369,11 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
 
 @Composable
 private fun SectionHeader(title: String, count: Int) {
-    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 10.dp)) {
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
         androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
