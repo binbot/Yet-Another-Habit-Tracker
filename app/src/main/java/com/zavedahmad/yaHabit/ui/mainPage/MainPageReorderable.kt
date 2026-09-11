@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -285,7 +287,8 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
 //                            contentPadding = PaddingValues(top = 1.dp, start = 10.dp, end = 10.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            item {  }  // Todo this is testing
+                            item { }  // spacing
+                            item(key = "routines-header") { SectionHeader("Routines", filteredRoutines.size) }
                             items(filteredRoutines, key = { "routine-${it.id}" }) { routine ->
                                 val scheme = routineColorSchemes[routine.id]
                                 if (scheme != null) {
@@ -306,6 +309,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                                     )
                                 }
                             }
+                            item(key = "habits-header") { SectionHeader("Habits", filteredHabits.size) }
                             items(filteredHabits, key = { it.id }) { habit ->
                                 ReorderableItem(
                                     reorderableLazyListState,
@@ -361,6 +365,21 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
         }
     }
 
+}
+
+@Composable
+private fun SectionHeader(title: String, count: Int) {
+    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 10.dp)) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text("$count", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    }
 }
 
 private fun filterHabitsList(
