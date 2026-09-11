@@ -11,6 +11,8 @@ import com.zavedahmad.yaHabit.ui.habitsDetailPage.HabitDetailsPageViewModel
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsViewModel
 import com.zavedahmad.yaHabit.database.HabitReminderScheduler
+import com.zavedahmad.yaHabit.database.repositories.RoutineRepository
+import com.zavedahmad.yaHabit.database.repositories.RoutineRepositoryImpl
 import com.zavedahmad.yaHabit.notification.AlarmScheduler
 import com.zavedahmad.yaHabit.notification.NotificationHelper
 import com.zavedahmad.yaHabit.widgets.overviewWidget.HabitWidgetRepository
@@ -36,6 +38,8 @@ val mainDBModule = module {
     single { get<MainDatabase>().preferencesDao() }
     single { get<MainDatabase>().habitDao() }
     single { get<MainDatabase>().habitCompletionDao() }
+    single { get<MainDatabase>().routineDao() }
+    single { get<MainDatabase>().routineItemDao() }
     single { NotificationHelper(androidContext()) }
     single { AlarmScheduler(androidContext(), get(), get(), get()) }
     single<HabitReminderScheduler> { get<AlarmScheduler>() }
@@ -45,6 +49,7 @@ val mainDBModule = module {
         context = androidContext(),
         databaseUtils = get()
     ) }
+    singleOf(::RoutineRepositoryImpl).bind<RoutineRepository>()
     viewModel { MainPageViewModel(get(), get()) }
 
     viewModel { (navKey: Screen.AddHabitPageRoute) ->
@@ -76,6 +81,13 @@ val mainDBModule = module {
     viewModel {
         AboutPageViewModel(
             preferencesRepository = get()
+        )
+    }
+    viewModel { (navKey: com.zavedahmad.yaHabit.Screen.AddRoutinePageRoute) ->
+        com.zavedahmad.yaHabit.ui.addRoutinePage.AddRoutinePageViewModel(
+            navKey = navKey,
+            routineRepository = get(),
+            habitDao = get()
         )
     }
 

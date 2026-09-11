@@ -29,10 +29,13 @@ import com.zavedahmad.yaHabit.ui.aboutPage.AboutPage
 import com.zavedahmad.yaHabit.ui.aboutPage.AboutPageViewModel
 import com.zavedahmad.yaHabit.ui.addHabitPage.AddHabitPage
 import com.zavedahmad.yaHabit.ui.addHabitPage.AddHabitPageViewModel
+import com.zavedahmad.yaHabit.ui.addRoutinePage.AddRoutinePage
+import com.zavedahmad.yaHabit.ui.addRoutinePage.AddRoutinePageViewModel
 import com.zavedahmad.yaHabit.ui.habitsDetailPage.HabitDetailsPage
 import com.zavedahmad.yaHabit.ui.habitsDetailPage.HabitDetailsPageViewModel
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageReorderable
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
+import com.zavedahmad.yaHabit.ui.routinesDetailPage.RoutineDetailsPage
 import com.zavedahmad.yaHabit.ui.setEdgeToEdgeConfig
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsScreen
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsViewModel
@@ -71,6 +74,11 @@ sealed class Screen : NavKey {
     @Serializable
     data object AboutPageRoute : Screen()
 
+    @Serializable
+    data class AddRoutinePageRoute(val routineId: Int? = null) : Screen()
+
+    @Serializable
+    data class RoutineDetailsPageRoute(val routineId: Int) : Screen()
 
 }
 
@@ -217,6 +225,19 @@ class MainActivity : ComponentActivity() {
                                             NavEntry(key = key) {
                                                 TestingPage(backStack)
 
+                                            }
+                                        }
+
+                                        is Screen.AddRoutinePageRoute -> {
+                                            NavEntry(key = key) {
+                                                val addRoutinePageViewModel: AddRoutinePageViewModel = koinViewModel{ parametersOf(key) }
+                                                AddRoutinePage(addRoutinePageViewModel, backStack)
+                                            }
+                                        }
+
+                                        is Screen.RoutineDetailsPageRoute -> {
+                                            NavEntry(key = key) {
+                                                RoutineDetailsPage(routineId = key.routineId, backStack = backStack)
                                             }
                                         }
 
