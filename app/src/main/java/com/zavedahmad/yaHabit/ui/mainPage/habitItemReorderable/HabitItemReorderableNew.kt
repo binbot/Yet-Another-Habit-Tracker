@@ -306,6 +306,11 @@ fun HabitItemReorderableNew(
 
                                 },
                                 habitEntity = habit,
+                                onSkipChanged = { skipValue ->
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        viewModel.habitRepository.setSkip(completionDate, habit.id, skipValue)
+                                    }
+                                },
                                 onFinalised = { isRepetitionsChanged, isNotesChanged, userTypedRepetition, userTypedNote ->
                                     if (isRepetitionsChanged && userTypedRepetition.toDoubleOrNull() != null) {
                                         coroutineScope.launch(Dispatchers.IO) {

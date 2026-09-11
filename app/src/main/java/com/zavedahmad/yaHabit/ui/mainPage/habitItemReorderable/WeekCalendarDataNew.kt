@@ -103,6 +103,7 @@ fun WeekCalendarDataNew(
                     deleteHabit = {
                         deleteRepetitionsForDate(day.date)
                     }, interactive = !dayState.isDisabled,
+                    habit = habitEntity,
                     dialogueComposable = { visible, onDismiss ->
                         dialogueComposable(visible, onDismiss, habitCompletionEntity, day.date)
                     })

@@ -2,6 +2,7 @@ package com.zavedahmad.yaHabit.ui.addRoutinePage
 
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import com.zavedahmad.yahabit.common.HabitColors
 import androidx.lifecycle.viewModelScope
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.daos.HabitDao
@@ -19,11 +20,7 @@ class AddRoutinePageViewModel(
     val routineRepository: RoutineRepository,
     val habitDao: HabitDao
 ) : ViewModel() {
-    val colors = listOf(
-        Color(0xFFFFD700), Color(0xFFBA55D3), Color(0xFF4682B4),
-        Color(0xFF40E0D0), Color(0xFF32CD32), Color(0xFFADFF2F),
-        Color(0xFFFF8C00), Color(0xFFDC143C), Color(0xFFA0522D), Color(0xFF708090)
-    )
+    val colors = HabitColors.palette
     private val _selectedColor = MutableStateFlow(colors[0])
     val selectedColor = _selectedColor.asStateFlow()
     private val _routineName = MutableStateFlow("")
@@ -40,8 +37,16 @@ class AddRoutinePageViewModel(
     val selectedHabitIds = _selectedHabitIds.asStateFlow()
     private val _existingRoutine = MutableStateFlow<RoutineEntity?>(null)
     val existingRoutine = _existingRoutine.asStateFlow()
+    private val _habits = MutableStateFlow<List<HabitEntity>>(emptyList())
+    val habits = _habits.asStateFlow()
 
-    init { getRoutineDetails() }
+    init { getRoutineDetails(); collectHabits() }
+
+    private fun collectHabits() {
+        viewModelScope.launch(Dispatchers.IO) {
+            habitDao.getHabitsFlowSortedByIndex().collect { _habits.value = it }
+        }
+    }
 
     fun setColor(c: Color) { _selectedColor.value = c }
     fun setRoutineName(n: String) { _routineName.value = n }

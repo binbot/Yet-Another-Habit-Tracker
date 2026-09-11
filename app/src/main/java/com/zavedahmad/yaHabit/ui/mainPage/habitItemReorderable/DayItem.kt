@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.database.entities.DayState
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.R
 import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
@@ -54,7 +55,8 @@ fun DayItem(
     unSkipHabit: () -> Unit,
     hasNote: Boolean = false,
     dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit,
-    interactive: Boolean = false
+    interactive: Boolean = false,
+    habit: HabitEntity? = null
 ) {
     val context = LocalContext.current
     val isDialogVisible = remember { mutableStateOf(false) }
@@ -65,10 +67,13 @@ fun DayItem(
     val borderColor = visuals.borderColor
     val makeToast =
         { Toast.makeText(context, "Cannot modify future data", Toast.LENGTH_SHORT).show() }
+    val isYesNo = habit?.repetitionPerDay == 1.0 && habit?.isNegative == false
     val buttonAction: List<() -> Unit> = when {
         state == DayState.Error -> listOf({}, {})
         state.isDisabled -> listOf(makeToast, makeToast)
         state == DayState.Skip -> listOf(unSkipHabit, { isDialogVisible.value = true })
+        state == DayState.Absolute && isYesNo -> listOf(skipHabit, { isDialogVisible.value = true })
+        state == DayState.AbsoluteMore -> listOf(skipHabit, { isDialogVisible.value = true })
         else -> listOf(incrementHabit, { isDialogVisible.value = true })
     }
     var iconComposable: (@Composable () -> Unit) = { }

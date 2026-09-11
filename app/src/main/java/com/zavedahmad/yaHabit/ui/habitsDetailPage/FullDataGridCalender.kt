@@ -29,10 +29,12 @@ import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapWeekHeaderPosition
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.yearMonth
+import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.hasNote
 import com.zavedahmad.yaHabit.database.entities.isPartial
+import com.zavedahmad.yaHabit.database.entities.resolveDayState
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -159,6 +161,7 @@ fun FullDataGridCalender(
                 val hideCell = outsideTrackingEra || futureOutsideCurrentWeek
 
                 if (!hideCell) {
+                    val dayState = resolveDayState(habitEntity, entry, day.date, dateToday)
                     Box(
                         Modifier
                             .height((gridHeight / 8).dp)
@@ -173,7 +176,10 @@ fun FullDataGridCalender(
                                 hasNote = entry?.hasNote() == true,
                                 isSkipCell = cls == DayClass.SKIP,
                                 incrementHabit = { incrementHabit(day.date) },
+                                skipHabit = { skipHabit(day.date) },
                                 unSkipHabit = { unSkipHabit(day.date) },
+                                habit = habitEntity,
+                                state = dayState,
                                 dialogueComposable = { visible, onDismiss ->
                                     dialogueComposable(visible, onDismiss, entry, day.date)
                                 }

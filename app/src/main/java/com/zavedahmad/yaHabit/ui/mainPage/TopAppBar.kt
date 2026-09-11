@@ -36,7 +36,7 @@ fun MainPageTopAppBar(
 ) {
     val isReorderableMode = viewModel.isReorderableMode.collectAsStateWithLifecycle()
     val colorForBorder = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
-    MediumFlexibleTopAppBar(
+    androidx.compose.material3.TopAppBar(
         modifier = Modifier.drawWithContent() {
             drawContent()
             drawLine(
@@ -47,8 +47,8 @@ fun MainPageTopAppBar(
             )
         },
         title = {
-            Text( // Add border around this
-                "Habits",
+            Text(
+                "Habits & Routines",
                 fontWeight = FontWeight.Bold
             )
         },
