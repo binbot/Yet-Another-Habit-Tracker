@@ -2,6 +2,7 @@ package com.zavedahmad.yaHabit.ui.addHabitPage
 
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import com.zavedahmad.yahabit.common.HabitColors
 import androidx.lifecycle.viewModelScope
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.daos.HabitDao
@@ -25,30 +26,7 @@ class AddHabitPageViewModel(
     val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
-    val colors = listOf<Color>(
-
-        Color(0xFFFFD700), // Vibrant Gold (Gold)
-
-        Color(0xFFBA55D3), // Vibrant Orchid (MediumOrchid)
-
-        Color(0xFF4682B4), // Vibrant Steel Blue (SteelBlue)
-
-        Color(0xFF40E0D0), // Vibrant Turquoise (Turquoise)
-
-        Color(0xFF32CD32), // Vibrant Lime Green (LimeGreen)
-
-        Color(0xFFADFF2F), // Vibrant Green Yellow (GreenYellow)
-
-
-        Color(0xFFFF8C00), // Vibrant Dark Orange (DarkOrange)
-
-        Color(0xFFDC143C), // Crimson
-        Color(0xFFA0522D), // Vibrant Sienna (Sienna)
-
-        Color(0xFF708090),  // Vibrant Slate Gray (SlateGray)
-
-
-    )
+    val colors = HabitColors.palette
     private val _allPreferences = MutableStateFlow<List<PreferenceEntity>>(emptyList())
     val allPreferences = _allPreferences.asStateFlow()
     private val _themeMode = MutableStateFlow<PreferenceEntity?>(null)
