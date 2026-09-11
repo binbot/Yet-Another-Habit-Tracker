@@ -5,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -124,7 +126,12 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                 if (allHabits.isEmpty()) {
                     Text("No habits yet — create a habit first", style = MaterialTheme.typography.bodySmall)
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
                         allHabits.forEach { habit ->
                             val selected = habit.id in selectedIds
                             FilterChip(
@@ -192,7 +199,6 @@ private fun RoutineFrequencySelector(viewModel: AddRoutinePageViewModel) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY) }, label = { Text("Daily") }, shape = RoundedCornerShape(50.dp))
             FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY) }, label = { Text("Weekly") }, shape = RoundedCornerShape(50.dp))
-            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY) }, label = { Text("Monthly") }, shape = RoundedCornerShape(50.dp))
             FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM) }, label = { Text("Custom") }, shape = RoundedCornerShape(50.dp))
         }
         when (streakType) {
@@ -204,13 +210,7 @@ private fun RoutineFrequencySelector(viewModel: AddRoutinePageViewModel) {
                     Text("${frequency?.toInt() ?: 5}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY -> {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Times per month:", style = MaterialTheme.typography.bodySmall)
-                    androidx.compose.material3.Slider(value = (frequency ?: 5f).toFloat(), onValueChange = { viewModel.setFrequency(it.toDouble()) }, valueRange = 1f..30f, steps = 28, modifier = Modifier.weight(1f))
-                    Text("${frequency?.toInt() ?: 5}", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+            com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY -> Text("Every day", style = MaterialTheme.typography.bodySmall)
             com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = (frequency ?: 5.0).toString(), onValueChange = { it.toDoubleOrNull()?.let { v -> viewModel.setFrequency(v) } }, label = { Text("Times") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
