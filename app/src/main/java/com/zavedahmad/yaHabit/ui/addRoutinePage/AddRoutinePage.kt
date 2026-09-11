@@ -118,11 +118,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                     maxLines = 4
                 )
                 Heading("Target Days")
-                // Reuse FrequencySelector by bridging routine ViewModel to habit-like interface via wrapper
-                // We create a lightweight fake viewModel adapter for FrequencySelector by using routine fields directly
-                // For v1 we just show simple weekly 5/7 default with no selector UI to keep placeholder simple
-                Text("Default: 5 days per week (Weekly)", style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.height(10.dp))
+                RoutineFrequencySelector(viewModel)
 
                 Heading("Steps — select habits")
                 if (allHabits.isEmpty()) {
@@ -134,7 +130,8 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                             FilterChip(
                                 selected = selected,
                                 onClick = { viewModel.toggleHabitSelection(habit.id) },
-                                label = { Text(habit.name) }
+                                label = { Text(habit.name) },
+                                shape = RoundedCornerShape(50.dp)
                             )
                         }
                     }
@@ -170,19 +167,57 @@ private fun RoutineColorSelector(viewModel: AddRoutinePageViewModel) {
                     .padding(4.dp)
                     .height(40.dp)
                     .weight(1f)
-                    .then(
-                        if (isSelected) Modifier else Modifier
-                    )
             ) {
                 androidx.compose.material3.FilterChip(
                     selected = isSelected,
                     onClick = { viewModel.setColor(c) },
                     label = { },
+                    shape = RoundedCornerShape(50.dp),
                     colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                         selectedContainerColor = c, containerColor = c.copy(alpha = 0.3f)
                     )
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RoutineFrequencySelector(viewModel: AddRoutinePageViewModel) {
+    val streakType by viewModel.streakType.collectAsStateWithLifecycle()
+    val frequency by viewModel.routineFrequency.collectAsStateWithLifecycle()
+    val cycle by viewModel.routineCycle.collectAsStateWithLifecycle()
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY) }, label = { Text("Daily") }, shape = RoundedCornerShape(50.dp))
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY) }, label = { Text("Weekly") }, shape = RoundedCornerShape(50.dp))
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY) }, label = { Text("Monthly") }, shape = RoundedCornerShape(50.dp))
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM) }, label = { Text("Custom") }, shape = RoundedCornerShape(50.dp))
+        }
+        when (streakType) {
+            com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY -> Text("Every day", style = MaterialTheme.typography.bodySmall)
+            com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY -> {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Times per week:", style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.material3.Slider(value = (frequency ?: 5f).toFloat(), onValueChange = { viewModel.setFrequency(it.toDouble()) }, valueRange = 1f..7f, steps = 5, modifier = Modifier.weight(1f))
+                    Text("${frequency?.toInt() ?: 5}", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY -> {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Times per month:", style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.material3.Slider(value = (frequency ?: 5f).toFloat(), onValueChange = { viewModel.setFrequency(it.toDouble()) }, valueRange = 1f..30f, steps = 28, modifier = Modifier.weight(1f))
+                    Text("${frequency?.toInt() ?: 5}", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = (frequency ?: 5.0).toString(), onValueChange = { it.toDoubleOrNull()?.let { v -> viewModel.setFrequency(v) } }, label = { Text("Times") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
+                    OutlinedTextField(value = (cycle ?: 7).toString(), onValueChange = { it.toIntOrNull()?.let { v -> viewModel.setCycle(v) } }, label = { Text("Days") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
+                }
+            }
+        }
+        Text("${frequency?.toInt() ?: 5} times per ${cycle ?: 7} days", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

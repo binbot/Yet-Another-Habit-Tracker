@@ -232,6 +232,22 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                     )
                 }
             }
+            val routineColorSchemes: Map<Int, ColorScheme> = remember(
+                filteredRoutines,
+                allPreferences.getTheme(),
+                allPreferences.getAmoledThemeMode(),
+                isSystemInDarkTheme()
+            ) {
+                filteredRoutines.associate { routine ->
+                    routine.id to dynamicColorScheme(
+                        primary = routine.color,
+                        isDark = darkTheme,
+                        isAmoled = allPreferences.getAmoledThemeMode(),
+                        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                        contrastLevel = Contrast.Medium.value
+                    )
+                }
+            }
 
 
             val reorderableLazyListState =
@@ -271,12 +287,24 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                         ) {
                             item {  }  // Todo this is testing
                             items(filteredRoutines, key = { "routine-${it.id}" }) { routine ->
-                                RoutineItemReorderable(
-                                    backStack = backStack,
-                                    viewModel = viewModel,
-                                    routine = routine,
-                                    isReorderableMode = isReorderableMode.value
-                                )
+                                val scheme = routineColorSchemes[routine.id]
+                                if (scheme != null) {
+                                    MaterialTheme(colorScheme = scheme) {
+                                        RoutineItemReorderable(
+                                            backStack = backStack,
+                                            viewModel = viewModel,
+                                            routine = routine,
+                                            isReorderableMode = isReorderableMode.value
+                                        )
+                                    }
+                                } else {
+                                    RoutineItemReorderable(
+                                        backStack = backStack,
+                                        viewModel = viewModel,
+                                        routine = routine,
+                                        isReorderableMode = isReorderableMode.value
+                                    )
+                                }
                             }
                             items(filteredHabits, key = { it.id }) { habit ->
                                 ReorderableItem(

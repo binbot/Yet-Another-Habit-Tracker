@@ -2,10 +2,13 @@ package com.zavedahmad.yaHabit.ui.mainPage
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -74,6 +77,10 @@ fun RoutineItemReorderable(
             if (!isReorderableMode) expanded = !expanded
         }
     ) {
+        // Color accent bar to make routine color visible in list (parity with habit color theming)
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxWidth().height(4.dp).background(routine.color)
+        )
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(15.dp),
