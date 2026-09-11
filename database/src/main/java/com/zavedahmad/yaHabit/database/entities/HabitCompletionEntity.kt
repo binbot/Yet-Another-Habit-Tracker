@@ -32,6 +32,7 @@ data class HabitCompletionEntity(
     val skip: Boolean = false,
     @ColumnInfo(defaultValue = "false")
     val isNotNeeded: Boolean = false,
+    val sourceRoutineId: Int? = null,
     @PrimaryKey(autoGenerate = true) val id: Int = 0
 
 ) : Parcelable

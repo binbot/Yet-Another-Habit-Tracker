@@ -7,16 +7,20 @@ import androidx.room.TypeConverters
 import com.zavedahmad.yaHabit.database.daos.HabitCompletionDao
 import com.zavedahmad.yaHabit.database.daos.HabitDao
 import com.zavedahmad.yaHabit.database.daos.PreferencesDao
+import com.zavedahmad.yaHabit.database.daos.RoutineDao
+import com.zavedahmad.yaHabit.database.daos.RoutineItemDao
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.RoutineEntity
+import com.zavedahmad.yaHabit.database.entities.RoutineItemEntity
 import com.zavedahmad.yaHabit.database.typeConverters.ColorConvertor
 import com.zavedahmad.yaHabit.database.typeConverters.LocalDateConverter
 import com.zavedahmad.yaHabit.database.typeConverters.StreakTypeConverter
 
 @Database(
-    entities = [PreferenceEntity::class, HabitEntity::class, HabitCompletionEntity::class],
-    version = 5,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5)],
+    entities = [PreferenceEntity::class, HabitEntity::class, HabitCompletionEntity::class, RoutineEntity::class, RoutineItemEntity::class],
+    version = 6,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)],
     exportSchema = true
 )
 
@@ -25,5 +29,7 @@ abstract class MainDatabase : RoomDatabase() {
     abstract fun preferencesDao(): PreferencesDao
     abstract fun habitDao(): HabitDao
     abstract fun habitCompletionDao(): HabitCompletionDao
+    abstract fun routineDao(): RoutineDao
+    abstract fun routineItemDao(): RoutineItemDao
 
 }
