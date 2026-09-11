@@ -7,8 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.zavedahmad.yaHabit.database.PreferenceEntity
 import com.zavedahmad.yaHabit.database.constants.PreferenceKeys
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.RoutineEntity
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
 import com.zavedahmad.yaHabit.database.repositories.PreferencesRepository
+import com.zavedahmad.yaHabit.database.repositories.RoutineRepository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.launch
 class MainPageViewModel(
     val habitRepository: HabitRepository,
     val preferencesRepository: PreferencesRepository,
+    val routineRepository: RoutineRepository,
 
 
     ) :
@@ -37,6 +40,9 @@ class MainPageViewModel(
     private val _isReorderableMode = MutableStateFlow(false)
     val isReorderableMode = _isReorderableMode.asStateFlow()
 
+    private val _routines = MutableStateFlow<List<RoutineEntity>>(emptyList())
+    val routines: StateFlow<List<RoutineEntity>> = _routines
+
     private val showArchive = MutableStateFlow(false)
 
     private val _devMode = MutableStateFlow<Boolean>(false)
@@ -45,6 +51,7 @@ class MainPageViewModel(
     init {
         collectPreferences()
         collectHabits()
+        collectRoutines()
     }
 
     fun collectHabits() {
@@ -53,6 +60,16 @@ class MainPageViewModel(
                 _habits.value = it
             }
         }
+    }
+
+    fun collectRoutines() {
+        viewModelScope.launch(Dispatchers.IO) {
+            routineRepository.getRoutinesFlowSorted().collect { _routines.value = it }
+        }
+    }
+
+    fun deleteRoutineById(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) { routineRepository.deleteRoutine(id) }
     }
 
     fun setArchivedFilter(value: Boolean) {

@@ -50,7 +50,7 @@ val mainDBModule = module {
         databaseUtils = get()
     ) }
     singleOf(::RoutineRepositoryImpl).bind<RoutineRepository>()
-    viewModel { MainPageViewModel(get(), get()) }
+    viewModel { MainPageViewModel(get(), get(), get()) }
 
     viewModel { (navKey: Screen.AddHabitPageRoute) ->
         AddHabitPageViewModel(

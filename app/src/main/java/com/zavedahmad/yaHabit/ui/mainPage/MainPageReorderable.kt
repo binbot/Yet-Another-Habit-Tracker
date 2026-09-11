@@ -59,6 +59,7 @@ import com.materialkolor.dynamicColorScheme
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
+import com.zavedahmad.yaHabit.database.entities.RoutineEntity
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
 import com.zavedahmad.yaHabit.database.utils.getAmoledThemeMode
 import com.zavedahmad.yaHabit.database.utils.getFirstDayOfWeek
@@ -198,6 +199,10 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
 
                 }
             }
+            val routines = viewModel.routines.collectAsStateWithLifecycle().value
+            val filteredRoutines by remember(allPreferences, routines) {
+                derivedStateOf { filterRoutinesList(allPreferences.getShowArchive(), allPreferences.getShowActive(), routines) }
+            }
 
             val darkTheme = when (allPreferences.getTheme()) {
                 "light" -> false
@@ -260,6 +265,22 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             item {  }  // Todo this is testing
+                            if (filteredRoutines.isNotEmpty() || true) {
+                                item(key = "add-routine") {
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = { backStack.add(Screen.AddRoutinePageRoute()) },
+                                        modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp)
+                                    ) { Text("+ Add Routine") }
+                                }
+                            }
+                            items(filteredRoutines, key = { "routine-${it.id}" }) { routine ->
+                                RoutineItemReorderable(
+                                    backStack = backStack,
+                                    viewModel = viewModel,
+                                    routine = routine,
+                                    isReorderableMode = isReorderableMode.value
+                                )
+                            }
                             items(filteredHabits, key = { it.id }) { habit ->
                                 ReorderableItem(
                                     reorderableLazyListState,
@@ -304,6 +325,15 @@ private fun filterHabitsList(
     return habits.filter { showArchived && it.isArchived || showActive && !it.isArchived }
         .sortedBy { it.index }
 
+}
+
+private fun filterRoutinesList(
+    showArchived: Boolean,
+    showActive: Boolean,
+    routines: List<RoutineEntity>
+): List<RoutineEntity> {
+    return routines.filter { showArchived && it.isArchived || showActive && !it.isArchived }
+        .sortedBy { it.index }
 }
 
 
