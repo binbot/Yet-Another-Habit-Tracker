@@ -39,7 +39,8 @@ fun DialogueForHabit(
     habitCompletionEntity: HabitCompletionEntity?,
     updateHabitCompletionEntity: (HabitCompletionEntity) -> Unit,
     habitEntity: HabitEntity,
-    onFinalised: (isRepetitionsChanged: Boolean, isNotesChanged: Boolean, userTypedRepetition: String, userTypedNote: String?) -> Unit
+    onFinalised: (isRepetitionsChanged: Boolean, isNotesChanged: Boolean, userTypedRepetition: String, userTypedNote: String?) -> Unit,
+    onSkipChanged: (Boolean) -> Unit = {}
 ) {
     if (isVisible) {
         Dialog(onDismissRequest = { onDismissRequest() }) {
@@ -53,11 +54,12 @@ fun DialogueForHabit(
                     }
                 )
             }
-            val isSkip = if (entityAlreadyExists) {
+            val isSkipInitial = if (entityAlreadyExists) {
                 habitCompletionEntity.isSkip()
             } else {
                 false
             }
+            val isSkipState = remember { mutableStateOf(isSkipInitial) }
             val isRepetitionsValueValid =
                 remember { derivedStateOf { repetitions.value.toDoubleOrNull() != null } }
             val isRepetitionsValueChanged = remember {
@@ -109,10 +111,25 @@ fun DialogueForHabit(
                 ) {
                     Row(
                         Modifier.Companion.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
+                        if (isSkipState.value) {
+                            Button(onClick = {
+                                isSkipState.value = false
+                                onSkipChanged(false)
+                                onDismissRequest()
+                            }) { Text("Restore Day") }
+                        } else {
+                            androidx.compose.material3.OutlinedButton(onClick = {
+                                isSkipState.value = true
+                                repetitions.value = ""
+                                onSkipChanged(true)
+                                onDismissRequest()
+                            }) { Text("Skip Day") }
+                        }
                         Button(
-
+                            enabled = !isSkipState.value,
                             onClick = {
                                 onFinalised(
                                     isRepetitionsValueChanged.value,
@@ -127,7 +144,7 @@ fun DialogueForHabit(
                             }) { Text("Apply") }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
-                    if (!isSkip) {
+                    if (!isSkipState.value) {
 
                         OutlinedTextField(
                             shape = MaterialTheme.shapes.extraLarge,

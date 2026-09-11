@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.zavedahmad.yaHabit.database.entities.DayState
+import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import java.time.LocalDate
 
 /**
@@ -34,7 +36,10 @@ fun GridDayItem(
     hasNote: Boolean = false,
     isSkipCell: Boolean = false,
     incrementHabit: () -> Unit = {},
+    skipHabit: () -> Unit = {},
     unSkipHabit: () -> Unit = {},
+    habit: HabitEntity? = null,
+    state: DayState? = null,
     dialogueComposable: @Composable (Boolean, () -> Unit) -> Unit
 ) {
     val isDialogVisible = remember { mutableStateOf(false) }
@@ -42,9 +47,17 @@ fun GridDayItem(
 
     val textColor = if (bg.luminance() > 0.5f) Color(0xFF1C1B1F) else Color.White
 
+    val isYesNo = habit?.repetitionPerDay == 1.0 && habit?.isNegative == false
     val modifier = if (interactive) {
         Modifier.combinedClickable(
-            onClick = if (isSkipCell) unSkipHabit else incrementHabit,
+            onClick = {
+                when {
+                    isSkipCell -> unSkipHabit()
+                    state == DayState.Absolute && isYesNo -> skipHabit()
+                    state == DayState.AbsoluteMore -> skipHabit()
+                    else -> incrementHabit()
+                }
+            },
             onLongClick = { isDialogVisible.value = true }
         )
     } else Modifier

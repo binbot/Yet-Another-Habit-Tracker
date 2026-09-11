@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import com.zavedahmad.yaHabit.database.entities.isSkip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -101,8 +103,30 @@ fun RoutineItemReorderable(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!isReorderableMode) {
-                        IconButton(onClick = { backStack.add(Screen.RoutineDetailsPageRoute(routine.id)) }) {
-                            Text("›", fontSize = 20.sp)
+                        // Routine-level skip — marks all steps for today as skipped to help partially completed stats
+                        val allSkipped = remember(routineItems, habits) {
+                            routineItems.isNotEmpty() && routineItems.all { item ->
+                                val h = habitMap[item.habitId]
+                                if (h == null) false else {
+                                    // check via synchronous? For header we approximate not skipped; detailed check per row handles
+                                    false
+                                }
+                            }
+                        }
+                        IconButton(onClick = {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val todayS = LocalDate.now()
+                                // Determine if routine today is already all skipped
+                                val items = viewModel.routineRepository.getItemsForRoutine(routine.id)
+                                val allAreSkipped = items.all { ri ->
+                                    viewModel.habitRepository.getAllHabitCompletionsById(ri.habitId)?.firstOrNull { it.completionDate == todayS }?.isSkip() == true
+                                }
+                                items.forEach { ri ->
+                                    viewModel.habitRepository.setSkip(todayS, ri.habitId, !allAreSkipped)
+                                }
+                            }
+                        }) {
+                            Icon(Icons.Default.DoubleArrow, contentDescription = "skip routine", tint = MaterialTheme.colorScheme.tertiary)
                         }
                     }
                     IconButton(onClick = { expanded = !expanded }) {
@@ -144,6 +168,7 @@ private fun RoutineStepRow(habit: HabitEntity, viewModel: MainPageViewModel, tod
     val entry = completions?.firstOrNull { it.completionDate == today }
     val state = resolveDayState(habit, entry, today, today)
     val checked = state == DayState.Absolute || state == DayState.AbsoluteMore || state == DayState.NegativeCount
+    val isSkipped = state == DayState.Skip
     val coroutineScope = rememberCoroutineScope()
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -154,14 +179,23 @@ private fun RoutineStepRow(habit: HabitEntity, viewModel: MainPageViewModel, tod
             Text(habit.name, style = MaterialTheme.typography.bodyMedium)
             Text("${habit.repetitionPerDay} ${habit.measurementUnit}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Checkbox(
-            checked = checked,
-            onCheckedChange = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {
                 coroutineScope.launch(Dispatchers.IO) {
-                    if (checked) viewModel.habitRepository.decrementRepetitions(today, habit.id)
-                    else viewModel.habitRepository.incrementRepetitions(today, habit.id)
+                    viewModel.habitRepository.setSkip(today, habit.id, !isSkipped)
                 }
+            }) {
+                Icon(Icons.Default.DoubleArrow, contentDescription = if (isSkipped) "unskip" else "skip", tint = if (isSkipped) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        )
+            Checkbox(
+                checked = checked,
+                onCheckedChange = {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        if (checked) viewModel.habitRepository.decrementRepetitions(today, habit.id)
+                        else viewModel.habitRepository.incrementRepetitions(today, habit.id)
+                    }
+                }
+            )
+        }
     }
 }
