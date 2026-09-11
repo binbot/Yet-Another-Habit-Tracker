@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import com.zavedahmad.yaHabit.MainActivity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
@@ -33,6 +34,8 @@ class NotificationHelper(private val context: Context) {
 
     fun showHabitReminder(habit: HabitEntity) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        // Respect DND: if notifications are blocked at channel level, skip silently
+        if (nm.getNotificationChannel(CHANNEL_ID)?.importance == NotificationManager.IMPORTANCE_NONE) return
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -44,16 +47,28 @@ class NotificationHelper(private val context: Context) {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(com.zavedahmad.yaHabit.R.mipmap.ic_launcher)
+            .setColor(habit.color.toArgb())
+            .setColorized(true)
             .setContentTitle(habit.name)
             .setContentText("Still due today — tap to open")
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(pending)
             .setAutoCancel(true)
             .setGroup(GROUP_KEY)
             .build()
         nm.notify(habit.id, notification)
 
-        // Post group summary if >1 notifications in group (v1 simple: always ensure summary exists when >1)
-        // Summaries are handled lazily; no-op for single.
+        // Group summary when >3 habit reminders are active (polish spec)
+        try {
+            val active = nm.activeNotifications.filter { it.notification.group == GROUP_KEY && it.id != SUMMARY_ID }
+            if (active.size > 3) {
+                showSummaryIfNeeded(active.size)
+            } else if (active.size <= 1) {
+                nm.cancel(SUMMARY_ID)
+            }
+        } catch (_: Exception) {
+            // activeNotifications may throw on some OEMs; ignore
+        }
     }
 
     fun showSummaryIfNeeded(count: Int) {
@@ -82,5 +97,15 @@ class NotificationHelper(private val context: Context) {
     fun cancel(habitId: Int) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.cancel(habitId)
+        try {
+            val remaining = nm.activeNotifications.filter { it.notification.group == GROUP_KEY && it.id != SUMMARY_ID }
+            if (remaining.size <= 1) nm.cancel(SUMMARY_ID)
+            else if (remaining.size > 3) showSummaryIfNeeded(remaining.size)
+        } catch (_: Exception) {}
+    }
+
+    fun cancelAll() {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.cancelAll()
     }
 }
