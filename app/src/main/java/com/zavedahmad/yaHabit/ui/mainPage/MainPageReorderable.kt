@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,6 +45,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +54,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import com.materialkolor.Contrast
@@ -66,6 +69,7 @@ import com.zavedahmad.yaHabit.database.utils.getFirstDayOfWeek
 import com.zavedahmad.yaHabit.database.utils.getShowActive
 import com.zavedahmad.yaHabit.database.utils.getShowArchive
 import com.zavedahmad.yaHabit.database.utils.getTheme
+import com.zavedahmad.yaHabit.ui.components.CardMyStyle
 import com.zavedahmad.yaHabit.ui.mainPage.habitItemReorderable.HabitItemReorderableNew
 import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
 import com.zavedahmad.yaHabit.widgets.overviewWidget.MyAppWidget
@@ -83,6 +87,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
     val isReorderableMode = viewModel.isReorderableMode.collectAsStateWithLifecycle()
+    var showAddDialog by remember { mutableStateOf(false) }
     LaunchedEffect(habits.value) {
         listUpdatedChannel.trySend(Unit)
     }
@@ -144,7 +149,7 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                     exit = slideOutVertically { it -> it * 30 / 20 } + fadeOut()
                 ) {
                     MediumFloatingActionButton(
-                        onClick = { backStack.add(Screen.AddHabitPageRoute()) },
+                        onClick = { showAddDialog = true },
                         modifier = Modifier
                             .border(
                                 shape = FloatingActionButtonDefaults.shape,
@@ -265,14 +270,6 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             item {  }  // Todo this is testing
-                            if (filteredRoutines.isNotEmpty() || true) {
-                                item(key = "add-routine") {
-                                    androidx.compose.material3.OutlinedButton(
-                                        onClick = { backStack.add(Screen.AddRoutinePageRoute()) },
-                                        modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp)
-                                    ) { Text("+ Add Routine") }
-                                }
-                            }
                             items(filteredRoutines, key = { "routine-${it.id}" }) { routine ->
                                 RoutineItemReorderable(
                                     backStack = backStack,
@@ -309,6 +306,27 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
 
                             item { Spacer(Modifier.height(70.dp)) }
                         }
+                    }
+                }
+            }
+        }
+        if (showAddDialog) {
+            Dialog(onDismissRequest = { showAddDialog = false }) {
+                CardMyStyle(modifier = Modifier.padding(16.dp)) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Add new", style = MaterialTheme.typography.titleLarge)
+                        androidx.compose.material3.Button(
+                            onClick = { showAddDialog = false; backStack.add(Screen.AddHabitPageRoute()) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Habit") }
+                        androidx.compose.material3.Button(
+                            onClick = { showAddDialog = false; backStack.add(Screen.AddRoutinePageRoute()) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Routine") }
+                        androidx.compose.material3.TextButton(onClick = { showAddDialog = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancel") }
                     }
                 }
             }

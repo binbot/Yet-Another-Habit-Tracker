@@ -40,8 +40,16 @@ class AddRoutinePageViewModel(
     val selectedHabitIds = _selectedHabitIds.asStateFlow()
     private val _existingRoutine = MutableStateFlow<RoutineEntity?>(null)
     val existingRoutine = _existingRoutine.asStateFlow()
+    private val _habits = MutableStateFlow<List<HabitEntity>>(emptyList())
+    val habits = _habits.asStateFlow()
 
-    init { getRoutineDetails() }
+    init { getRoutineDetails(); collectHabits() }
+
+    private fun collectHabits() {
+        viewModelScope.launch(Dispatchers.IO) {
+            habitDao.getHabitsFlowSortedByIndex().collect { _habits.value = it }
+        }
+    }
 
     fun setColor(c: Color) { _selectedColor.value = c }
     fun setRoutineName(n: String) { _routineName.value = n }
