@@ -3,6 +3,7 @@ package com.zavedahmad.yaHabit.di
 import androidx.room.Room
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.MainDatabase
+import com.zavedahmad.yaHabit.database.migrations.MIGRATION_6_7
 import com.zavedahmad.yaHabit.database.repositories.ImportExportRepository
 import com.zavedahmad.yaHabit.database.repositories.PreferencesRepository
 import com.zavedahmad.yaHabit.ui.aboutPage.AboutPageViewModel
@@ -31,7 +32,7 @@ val mainDBModule = module {
             context = androidContext(),
             klass = MainDatabase::class.java,
             name = "main_database"
-        ).build()
+        ).addMigrations(MIGRATION_6_7).build()
     }
     singleOf(::HabitWidgetRepository)
     singleOf(::WidgetUpdaterImpl).bind<WidgetUpdater>()
@@ -40,6 +41,8 @@ val mainDBModule = module {
     single { get<MainDatabase>().habitCompletionDao() }
     single { get<MainDatabase>().routineDao() }
     single { get<MainDatabase>().routineItemDao() }
+    single { get<MainDatabase>().routineStepDao() }
+    single { get<MainDatabase>().routineStepCompletionDao() }
     single { NotificationHelper(androidContext()) }
     single { AlarmScheduler(androidContext(), get(), get(), get()) }
     single<HabitReminderScheduler> { get<AlarmScheduler>() }
