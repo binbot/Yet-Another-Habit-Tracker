@@ -8,13 +8,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import com.zavedahmad.yaHabit.database.entities.isSkip
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -41,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.NavBackStack
 import com.zavedahmad.yaHabit.Screen
+import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.RoutineEntity
@@ -64,9 +69,31 @@ fun RoutineItemReorderable(
     val routineItems by viewModel.routineRepository.getItemsForRoutineFlow(routine.id).collectAsStateWithLifecycle(initialValue = emptyList())
     val habits = viewModel.habits.collectAsStateWithLifecycle().value
     val habitMap = remember(habits) { habits.associateBy { it.id } }
+    val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
 
-    // For progress: count met today
     val today = LocalDate.now()
+    val todayCompletions by viewModel.habitRepository.getTodayCompletionsFlow()
+        .collectAsStateWithLifecycle(initialValue = emptyMap())
+
+    // A routine is met for today once every step is done or skipped (skip is neutral).
+    val metToday = routineItems.isNotEmpty() && routineItems.all { item ->
+        val habit = habitMap[item.habitId] ?: return@all false
+        when (resolveDayState(habit, todayCompletions[item.habitId], today, today)) {
+            DayState.Absolute, DayState.AbsoluteMore, DayState.NegativeCount, DayState.Skip -> true
+            else -> false
+        }
+    }
+
+    ConfirmationDialog(
+        visible = showDeleteDialog.value,
+        text = "Do you want to delete this Routine?",
+        confirmAction = { viewModel.deleteRoutineById(routine.id) },
+        onDismiss = { showDeleteDialog.value = false },
+        confirmationColor = ButtonDefaults.buttonColors(
+            contentColor = MaterialTheme.colorScheme.onError,
+            containerColor = MaterialTheme.colorScheme.error
+        )
+    )
 
     Card(
         modifier = Modifier
@@ -99,19 +126,22 @@ fun RoutineItemReorderable(
                         Text(routine.description, maxLines = 1, style = MaterialTheme.typography.bodySmall, modifier = Modifier.alpha(alphaValue))
                     }
                     Text("${routineItems.size} steps • ${routine.frequency.toInt()}/${routine.cycle} per cycle", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (metToday) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "completed today",
+                                tint = routine.color,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.size(4.dp))
+                            Text("Done today", style = MaterialTheme.typography.labelMedium, color = routine.color)
+                        }
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!isReorderableMode) {
                         // Routine-level skip — marks all steps for today as skipped to help partially completed stats
-                        val allSkipped = remember(routineItems, habits) {
-                            routineItems.isNotEmpty() && routineItems.all { item ->
-                                val h = habitMap[item.habitId]
-                                if (h == null) false else {
-                                    // check via synchronous? For header we approximate not skipped; detailed check per row handles
-                                    false
-                                }
-                            }
-                        }
                         IconButton(onClick = {
                             coroutineScope.launch(Dispatchers.IO) {
                                 val todayS = LocalDate.now()
@@ -130,6 +160,9 @@ fun RoutineItemReorderable(
                     }
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = "expand")
+                    }
+                    if (!isReorderableMode) {
+                        RoutineActionsDialogue(routine, viewModel, backStack, showDeleteDialog)
                     }
                 }
             }

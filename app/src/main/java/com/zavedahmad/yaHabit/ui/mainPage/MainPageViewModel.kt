@@ -72,6 +72,14 @@ class MainPageViewModel(
         viewModelScope.launch(Dispatchers.IO) { routineRepository.deleteRoutine(id) }
     }
 
+    fun archiveRoutineById(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) { routineRepository.archiveRoutine(id, true) }
+    }
+
+    fun unArchiveRoutineById(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) { routineRepository.archiveRoutine(id, false) }
+    }
+
     fun setArchivedFilter(value: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             preferencesRepository.setPreference(PreferenceKeys.ShowArchive.key, value.toString())
