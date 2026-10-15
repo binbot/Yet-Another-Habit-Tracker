@@ -88,6 +88,8 @@ fun RoutineDetailsPage(viewModel: RoutineDetailsPageViewModel, backStack: NavBac
                 Text("$freq/$cycle per cycle", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
+            RoutineSummaryCard(steps = steps, completions = completions, accent = accent)
+
             Spacer(Modifier.height(4.dp))
             Text("Step completions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
@@ -106,6 +108,101 @@ fun RoutineDetailsPage(viewModel: RoutineDetailsPageViewModel, backStack: NavBac
             Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+private fun RoutineSummaryCard(
+    steps: List<RoutineStepEntity>,
+    completions: List<RoutineStepCompletionEntity>,
+    accent: Color
+) {
+    val metDates = remember(steps, completions) { routineMetDates(steps, completions) }
+    val (current, best) = remember(metDates) { streaks(metDates, LocalDate.now()) }
+    val days = remember { (0 until RECENT_DAYS).map { LocalDate.now().minusDays(it.toLong()) }.reversed() }
+
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatBlock("Completed", metDates.size.toString(), "times", accent)
+                StatBlock("Current streak", current.toString(), if (current == 1) "day" else "days", MaterialTheme.colorScheme.onSurface)
+                StatBlock("Best streak", best.toString(), if (best == 1) "day" else "days", MaterialTheme.colorScheme.onSurface)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                days.forEach { date ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(16.dp)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(if (date in metDates) accent else MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "routine counts as met on a day when every step is done or skipped • last $RECENT_DAYS days",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatBlock(label: String, value: String, unit: String, valueColor: Color) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, style = MaterialTheme.typography.headlineMedium, color = valueColor, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.size(4.dp))
+            Text(
+                unit,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+    }
+}
+
+/** Dates on which every one of the routine's current steps was done or skipped. */
+private fun routineMetDates(
+    steps: List<RoutineStepEntity>,
+    completions: List<RoutineStepCompletionEntity>
+): Set<LocalDate> {
+    if (steps.isEmpty()) return emptySet()
+    return completions.groupBy { it.completionDate }
+        .filter { (_, entries) ->
+            val byStep = entries.associateBy { it.stepId }
+            steps.all { step ->
+                val c = byStep[step.id]
+                c?.isDone == true || c?.isSkip == true
+            }
+        }
+        .keys
+}
+
+/** Returns (currentStreakEndingTodayOrYesterday, bestStreak). */
+private fun streaks(metDates: Set<LocalDate>, today: LocalDate): Pair<Int, Int> {
+    if (metDates.isEmpty()) return 0 to 0
+    val sorted = metDates.sorted()
+    var best = 1
+    var run = 1
+    for (i in 1 until sorted.size) {
+        run = if (sorted[i] == sorted[i - 1].plusDays(1)) run + 1 else 1
+        if (run > best) best = run
+    }
+    var current = 0
+    var cursor = if (today in metDates) today else today.minusDays(1)
+    while (cursor in metDates) {
+        current++
+        cursor = cursor.minusDays(1)
+    }
+    return current to best
 }
 
 @Composable
