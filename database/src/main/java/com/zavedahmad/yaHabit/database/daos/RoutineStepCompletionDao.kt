@@ -21,6 +21,13 @@ interface RoutineStepCompletionDao {
     @Query("SELECT * FROM RoutineStepCompletion WHERE completionDate = :date")
     fun getCompletionsForDateFlow(date: LocalDate): Flow<List<RoutineStepCompletionEntity>>
 
+    @Query(
+        "SELECT c.* FROM RoutineStepCompletion AS c " +
+            "INNER JOIN RoutineStep AS s ON s.id = c.stepId " +
+            "WHERE s.routineId = :routineId ORDER BY c.completionDate ASC"
+    )
+    fun getCompletionsForRoutineFlow(routineId: Int): Flow<List<RoutineStepCompletionEntity>>
+
     @Query("DELETE FROM RoutineStepCompletion WHERE stepId = :stepId AND completionDate = :date")
     suspend fun deleteForStepAndDate(stepId: Int, date: LocalDate)
 

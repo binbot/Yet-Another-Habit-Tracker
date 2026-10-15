@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.MoreVert
@@ -79,6 +80,13 @@ fun RoutineActionsDialogue(
                     }, label = "Edit", clickAction = {
                         isDialogueVisible.value = false
                         backStack.add(Screen.AddRoutinePageRoute(routineId = routine.id))
+                    })
+
+                    HabitActionItem(icon = {
+                        Icon(Icons.Default.BarChart, contentDescription = "")
+                    }, label = "Stats", clickAction = {
+                        isDialogueVisible.value = false
+                        backStack.add(Screen.RoutineDetailsPageRoute(routine.id))
                     })
 
                     HabitActionItem(icon = {

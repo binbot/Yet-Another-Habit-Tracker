@@ -93,5 +93,11 @@ val mainDBModule = module {
             habitDao = get()
         )
     }
+    viewModel { (navKey: com.zavedahmad.yaHabit.Screen.RoutineDetailsPageRoute) ->
+        com.zavedahmad.yaHabit.ui.routinesDetailPage.RoutineDetailsPageViewModel(
+            navKey = navKey,
+            routineRepository = get()
+        )
+    }
 
 }

@@ -36,6 +36,7 @@ import com.zavedahmad.yaHabit.ui.habitsDetailPage.HabitDetailsPageViewModel
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageReorderable
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
 import com.zavedahmad.yaHabit.ui.routinesDetailPage.RoutineDetailsPage
+import com.zavedahmad.yaHabit.ui.routinesDetailPage.RoutineDetailsPageViewModel
 import com.zavedahmad.yaHabit.ui.setEdgeToEdgeConfig
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsScreen
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsViewModel
@@ -233,8 +234,10 @@ class MainActivity : ComponentActivity() {
 
                                     is Screen.RoutineDetailsPageRoute -> {
                                         NavEntry(key = key) {
+                                            val routineDetailsPageViewModel: RoutineDetailsPageViewModel =
+                                                koinViewModel { parametersOf(key) }
                                             RoutineDetailsPage(
-                                                routineId = key.routineId,
+                                                viewModel = routineDetailsPageViewModel,
                                                 backStack = backStack
                                             )
                                         }

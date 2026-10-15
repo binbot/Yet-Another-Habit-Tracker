@@ -39,6 +39,7 @@ interface RoutineRepository {
 
     fun getStepCompletionsForDateFlow(date: LocalDate): Flow<List<RoutineStepCompletionEntity>>
     fun getStepCompletionsForStepFlow(stepId: Int): Flow<List<RoutineStepCompletionEntity>>
+    fun getStepCompletionsForRoutineFlow(routineId: Int): Flow<List<RoutineStepCompletionEntity>>
     suspend fun setStepDone(stepId: Int, date: LocalDate, done: Boolean)
     suspend fun setStepSkip(stepId: Int, date: LocalDate, skip: Boolean)
 }
