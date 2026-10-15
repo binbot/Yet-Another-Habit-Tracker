@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -12,17 +13,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,12 +51,16 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +75,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
     val name by viewModel.routineName.collectAsStateWithLifecycle()
     val description by viewModel.routineDescription.collectAsStateWithLifecycle()
     val allHabits by viewModel.habits.collectAsStateWithLifecycle()
-    val selectedIds by viewModel.selectedHabitIds.collectAsStateWithLifecycle()
+    val steps by viewModel.steps.collectAsStateWithLifecycle()
     val selectedColor by viewModel.selectedColor.collectAsStateWithLifecycle()
     val isNameError = remember { derivedStateOf { name.isEmpty() } }
     val frequencyError = remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -122,26 +135,50 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                 Heading("Target Days")
                 RoutineFrequencySelector(viewModel)
 
-                Heading("Steps — select habits")
-                if (allHabits.isEmpty()) {
-                    Text("No habits yet — create a habit first", style = MaterialTheme.typography.bodySmall)
-                } else {
+                Heading("Steps")
+                var newStep by remember { mutableStateOf("") }
+                if (steps.isEmpty()) {
+                    Text("No steps yet — add one below", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                steps.forEachIndexed { index, step ->
+                    StepEditorRow(
+                        name = step.name,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < steps.lastIndex,
+                        onNameChange = { viewModel.updateStepName(index, it) },
+                        onMoveUp = { viewModel.moveStep(index, index - 1) },
+                        onMoveDown = { viewModel.moveStep(index, index + 1) },
+                        onRemove = { viewModel.removeStep(index) }
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CompactStepField(
+                        value = newStep,
+                        onValueChange = { newStep = it },
+                        placeholder = "New step…",
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { if (viewModel.addStep(newStep)) newStep = "" },
+                        enabled = newStep.isNotBlank()
+                    ) { Icon(Icons.Default.Add, contentDescription = "add step") }
+                }
+                if (allHabits.isNotEmpty()) {
+                    Text("Or copy from a habit (snapshot, not linked)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     @OptIn(ExperimentalLayoutApi::class)
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         allHabits.forEach { habit ->
-                            val selected = habit.id in selectedIds
-                            FilterChip(
-                                selected = selected,
-                                onClick = { viewModel.toggleHabitSelection(habit.id) },
-                                label = { Text(habit.name) }
+                            AssistChip(
+                                onClick = { viewModel.addStepFromHabit(habit) },
+                                label = { Text(habit.name) },
+                                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) }
                             )
                         }
                     }
-                    Text("${selectedIds.size} selected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 Heading("Color")
@@ -160,6 +197,83 @@ private fun Heading(heading: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) { Text(heading, style = MaterialTheme.typography.titleMedium) }
     HorizontalDivider()
     Spacer(Modifier.height(20.dp))
+}
+
+@Composable
+private fun StepEditorRow(
+    name: String,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onNameChange: (String) -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onRemove: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        CompactStepField(
+            value = name,
+            onValueChange = onNameChange,
+            placeholder = "Step name",
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onMoveUp, enabled = canMoveUp) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "move step up")
+        }
+        IconButton(onClick = onMoveDown, enabled = canMoveDown) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "move step down")
+        }
+        IconButton(onClick = onRemove) {
+            Icon(Icons.Default.Delete, contentDescription = "remove step", tint = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+/**
+ * Compact, single-line text field used for routine steps. Deliberately shorter than the M3 default
+ * 56dp [OutlinedTextField] so a list of steps stays dense and every field is the same height.
+ */
+@Composable
+private fun CompactStepField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        modifier = modifier,
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 44.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    innerTextField()
+                }
+            }
+        }
+    )
 }
 
 @Composable
