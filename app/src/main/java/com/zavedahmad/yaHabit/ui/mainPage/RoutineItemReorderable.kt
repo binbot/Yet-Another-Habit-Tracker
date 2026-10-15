@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
-import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.entities.RoutineEntity
 import com.zavedahmad.yaHabit.database.entities.RoutineStepEntity
 import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
@@ -168,11 +167,6 @@ fun RoutineItemReorderable(
                                     coroutineScope.launch(Dispatchers.IO) { viewModel.routineRepository.setStepSkip(step.id, today, newSkip) }
                                 }
                             )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            androidx.compose.material3.TextButton(onClick = { backStack.add(Screen.AddRoutinePageRoute(routineId = routine.id)) }) {
-                                Text("Edit")
-                            }
                         }
                     }
                 }
