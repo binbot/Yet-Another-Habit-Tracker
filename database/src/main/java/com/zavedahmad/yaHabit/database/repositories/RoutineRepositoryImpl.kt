@@ -139,6 +139,9 @@ class RoutineRepositoryImpl(
     override fun getStepCompletionsForStepFlow(stepId: Int): Flow<List<RoutineStepCompletionEntity>> =
         routineStepCompletionDao.getCompletionsForStepFlow(stepId)
 
+    override fun getStepCompletionsForRoutineFlow(routineId: Int): Flow<List<RoutineStepCompletionEntity>> =
+        routineStepCompletionDao.getCompletionsForRoutineFlow(routineId)
+
     override suspend fun setStepDone(stepId: Int, date: LocalDate, done: Boolean) {
         upsertStepCompletion(stepId, date, isDone = done)
     }
