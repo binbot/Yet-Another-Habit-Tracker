@@ -64,6 +64,7 @@ fun MainPageTopAppBar(
 
                     },
                     modifier = Modifier,
+                    shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(

@@ -9,8 +9,9 @@ import androidx.compose.ui.unit.dp
  *
  * Every structural surface in the app should pull its corners from
  * [androidx.compose.material3.MaterialTheme.shapes] rather than hard-coding a radius, so the
- * rounded language stays consistent (cards, dialogs, sheets, text fields...). Pills/stadium
- * shapes (chips, buttons, avatars) are intentionally left to each component's M3 default.
+ * rounded language stays consistent (cards, dialogs, sheets, text fields...). Chips keep their
+ * M3 default (small, 8.dp); filled/outlined buttons are squared to [Shapes.medium] for the same
+ * consistency, rather than the M3 stadium default.
  */
 val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),

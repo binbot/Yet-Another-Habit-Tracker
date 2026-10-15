@@ -400,7 +400,7 @@ fun FrequencySelector(viewModel: AddHabitPageViewModel, onErrorValueChange: (Boo
     )
     // These are all the buttons
 
-    OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
+    OutlinedButton(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, onClick = {
         checkErrorsAndRectify()
         showDialog.value = true
     }) {
@@ -432,8 +432,11 @@ fun FrequencySelector(viewModel: AddHabitPageViewModel, onErrorValueChange: (Boo
                      Row(
                          modifier = Modifier.fillMaxWidth(),
                          horizontalArrangement = Arrangement.End
-                     ) { Button(onClick = { showDialog.value = false
-                         checkErrorsAndRectify() }) { Text("Done") } }
+                     ) { Button(
+                         onClick = { showDialog.value = false
+                             checkErrorsAndRectify() },
+                         shape = MaterialTheme.shapes.medium
+                     ) { Text("Done") } }
                      options.forEachIndexed { index, item ->
                          val isChecked = streakChecked.value == index
                          DialogItem(

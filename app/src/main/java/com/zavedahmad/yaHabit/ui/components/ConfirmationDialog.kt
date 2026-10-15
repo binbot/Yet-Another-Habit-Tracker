@@ -75,12 +75,14 @@ fun ConfirmationDialog(
                         OutlinedButton(
                             modifier = Modifier.weight(1f),
                             onClick = { onDismiss() },
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) { Text(cancelText, color = MaterialTheme.colorScheme.onSurface) }
                         Spacer(Modifier.width(20.dp))
                         Button(
                             modifier = Modifier.weight(1f),
                             colors = confirmationColor,
+                            shape = MaterialTheme.shapes.medium,
                             onClick = { confirmAction() }) { Text(confirmText) }
                     }
                 }
