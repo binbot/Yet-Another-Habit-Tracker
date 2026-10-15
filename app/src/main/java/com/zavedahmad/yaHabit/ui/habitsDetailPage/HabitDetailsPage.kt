@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -69,9 +68,7 @@ import com.zavedahmad.yaHabit.database.utils.getFirstDayOfWeek
 import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
-import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
+import com.zavedahmad.yaHabit.ui.theme.YaHabitTheme
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,13 +87,11 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
 
 
     if (allPreferences.isEmpty()) {
-        ComposeTemplateTheme("system") {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-            )
-        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+        )
     } else {
         if (habitAllData == null || habit == null) {
             Scaffold { innerPadding ->
@@ -110,7 +105,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                 }
             }
         } else {
-            CustomTheme(
+            YaHabitTheme(
                 theme = allPreferences.getTheme(),
                 primaryColor = habit.color,
                 isAmoled = allPreferences.getAmoledThemeMode()
@@ -310,7 +305,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
 
                             Box(
                                 Modifier
-                                    .clip(RoundedCornerShape(20.dp))
+                                    .clip(MaterialTheme.shapes.large)
                                     .clickable(onClick = { dialogueVisible.value = true })
                             ) {
                                 FullDataGridCalender(
@@ -366,7 +361,7 @@ fun HabitDetailsPage(viewModel: HabitDetailsPageViewModel, backStack: SnapshotSt
                             ) {
                                 Text(
                                     "Top Streaks",
-                                    fontSize = 20.sp,
+                                    style = MaterialTheme.typography.titleMedium,
                                     textDecoration = TextDecoration.Underline
                                 )
                             }
@@ -435,11 +430,11 @@ private fun Menu(viewModel: HabitDetailsPageViewModel, backStack: SnapshotStateL
     }
     DropdownMenu(
         modifier = Modifier.Companion.border(
-            width = LocalOutlineSizes.current.small,
-            shape = RoundedCornerShape(10.dp),
+            width = 1.dp,
+            shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.outline
         ),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.medium,
         expanded = menuVisible.value, // Set to true to show the menu
         onDismissRequest = { menuVisible.value = false }) {
         DropdownMenuItem(text = {

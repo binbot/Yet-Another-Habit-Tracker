@@ -39,8 +39,7 @@ import com.zavedahmad.yaHabit.ui.routinesDetailPage.RoutineDetailsPage
 import com.zavedahmad.yaHabit.ui.setEdgeToEdgeConfig
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsScreen
 import com.zavedahmad.yaHabit.ui.settingsScreen.SettingsViewModel
-import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
+import com.zavedahmad.yaHabit.ui.theme.YaHabitTheme
 
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
@@ -97,10 +96,10 @@ class MainActivity : ComponentActivity() {
 
             val backStack = rememberNavBackStack<Screen>(Screen.MainPageRoute)
 
-            val viewModelMainPage: MainPageViewModel =  koinViewModel()
+            val viewModelMainPage: MainPageViewModel = koinViewModel()
 
 
-            val settingsViewModel : SettingsViewModel by viewModel()
+            val settingsViewModel: SettingsViewModel by viewModel()
             val theme by settingsViewModel.themeMode.collectAsStateWithLifecycle()
             val isDynamicColor by settingsViewModel.dynamicColor.collectAsStateWithLifecycle()
             val isAmoledColor by settingsViewModel.amoledTheme.collectAsStateWithLifecycle()
@@ -112,7 +111,7 @@ class MainActivity : ComponentActivity() {
                 !(themeReal == null || realDynamicColors == null || isAmoledColor == null || firstDayOfWeek == null)
             splashScreen.setKeepOnScreenCondition { !isReady }
             if (!isReady) {
-                ComposeTemplateTheme("system") {
+                YaHabitTheme(theme = "system") {
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -122,142 +121,141 @@ class MainActivity : ComponentActivity() {
 
             } else {
 
-                ComposeTemplateTheme(
-                    themeReal.value,
-                    dynamicColor = realDynamicColors.value == "true"
+                YaHabitTheme(
+                    theme = themeReal.value,
+                    dynamicColor = realDynamicColors.value == "true",
+                    isAmoled = isAmoledColor?.value == "true"
                 ) {
-                    CustomTheme(
-                        theme = themeReal.value,
-                        useExistingTheme = true,
-                        isAmoled = isAmoledColor?.value == "true"
+
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
 
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surface)
-                        ) {
+                        NavDisplay(
+                            backStack = backStack,
+                            onBack = { backStack.removeLastOrNull() },
+                            entryDecorators = listOf(
+                                rememberSceneSetupNavEntryDecorator(),
+                                rememberSavedStateNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator()
+                            ),
+                            entryProvider = { key ->
+                                when (key) {
 
+                                    is Screen.MainPageRoute -> {
+                                        NavEntry(key = key) {
 
+                                            Column {
 
-                            NavDisplay(
-                                backStack = backStack,
-                                onBack = { backStack.removeLastOrNull() },
-                                entryDecorators = listOf(
-                                    rememberSceneSetupNavEntryDecorator(),
-                                    rememberSavedStateNavEntryDecorator(),
-                                    rememberViewModelStoreNavEntryDecorator()
-                                ),
-                                entryProvider = { key ->
-                                    when (key) {
-
-                                        is Screen.MainPageRoute -> {
-                                            NavEntry(key = key) {
-
-                                                Column {
-
-                                                    MainPageReorderable(
-                                                        backStack,
-                                                        viewModelMainPage
-                                                    )
-                                                }
-                                            }
-                                        }
-
-
-                                        is Screen.SettingsPageRoute -> {
-                                            NavEntry(key = key) {
-
-
-                                                Box(
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-
-                                                    SettingsScreen(
-                                                        backStack,
-                                                        settingsViewModel,
-                                                        onDatabaseImport = {
-                                                            restartActivityOnImport(it)
-                                                        })
-                                                }
-                                            }
-                                        }
-
-                                        is Screen.AboutPageRoute -> {
-                                            NavEntry(key = key) {
-                                                val aboutPageViewModel : AboutPageViewModel by viewModel()
-                                                AboutPage(
-                                                    backStack = backStack,
-                                                    viewModel = aboutPageViewModel
+                                                MainPageReorderable(
+                                                    backStack,
+                                                    viewModelMainPage
                                                 )
                                             }
                                         }
-
-                                        is Screen.AddHabitPageRoute -> {
-                                            NavEntry(key = key) {
-
-                                                val addHabitPageViewModel: AddHabitPageViewModel  = koinViewModel {parametersOf(key) }
-                                                AddHabitPage(addHabitPageViewModel, backStack)
-
-                                            }
-                                        }
-
-                                        is Screen.CalenderPageRoute -> {
-                                            NavEntry(key = key) {
-
-                                            }
-                                        }
-
-                                        is Screen.HabitDetailsPageRoute -> {
-                                            NavEntry(key = key) {
-                                                val habitDetailsPageViewModel: HabitDetailsPageViewModel = koinViewModel{parametersOf(key)}
-                                                HabitDetailsPage(
-                                                    habitDetailsPageViewModel,
-                                                    backStack
-                                                )
-
-
-                                            }
-                                        }
-
-                                        is Screen.TestingPageRoute -> {
-                                            NavEntry(key = key) {
-                                                TestingPage(backStack)
-
-                                            }
-                                        }
-
-                                        is Screen.AddRoutinePageRoute -> {
-                                            NavEntry(key = key) {
-                                                val addRoutinePageViewModel: AddRoutinePageViewModel = koinViewModel{ parametersOf(key) }
-                                                AddRoutinePage(addRoutinePageViewModel, backStack)
-                                            }
-                                        }
-
-                                        is Screen.RoutineDetailsPageRoute -> {
-                                            NavEntry(key = key) {
-                                                RoutineDetailsPage(routineId = key.routineId, backStack = backStack)
-                                            }
-                                        }
-
-
-                                        else -> throw RuntimeException("Invalid NavKey.")
                                     }
 
 
-                                },
-                                transitionSpec = navigationForwardTransitionSpec,
-                                popTransitionSpec = predictiveTransition,
-                                predictivePopTransitionSpec = predictiveTransition
-                            )
+                                    is Screen.SettingsPageRoute -> {
+                                        NavEntry(key = key) {
 
-                        }
+
+                                            Box(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+
+                                                SettingsScreen(
+                                                    backStack,
+                                                    settingsViewModel,
+                                                    onDatabaseImport = {
+                                                        restartActivityOnImport(it)
+                                                    })
+                                            }
+                                        }
+                                    }
+
+                                    is Screen.AboutPageRoute -> {
+                                        NavEntry(key = key) {
+                                            val aboutPageViewModel: AboutPageViewModel by viewModel()
+                                            AboutPage(
+                                                backStack = backStack,
+                                                viewModel = aboutPageViewModel
+                                            )
+                                        }
+                                    }
+
+                                    is Screen.AddHabitPageRoute -> {
+                                        NavEntry(key = key) {
+
+                                            val addHabitPageViewModel: AddHabitPageViewModel =
+                                                koinViewModel { parametersOf(key) }
+                                            AddHabitPage(addHabitPageViewModel, backStack)
+
+                                        }
+                                    }
+
+                                    is Screen.CalenderPageRoute -> {
+                                        NavEntry(key = key) {
+
+                                        }
+                                    }
+
+                                    is Screen.HabitDetailsPageRoute -> {
+                                        NavEntry(key = key) {
+                                            val habitDetailsPageViewModel: HabitDetailsPageViewModel =
+                                                koinViewModel { parametersOf(key) }
+                                            HabitDetailsPage(
+                                                habitDetailsPageViewModel,
+                                                backStack
+                                            )
+
+
+                                        }
+                                    }
+
+                                    is Screen.TestingPageRoute -> {
+                                        NavEntry(key = key) {
+                                            TestingPage(backStack)
+
+                                        }
+                                    }
+
+                                    is Screen.AddRoutinePageRoute -> {
+                                        NavEntry(key = key) {
+                                            val addRoutinePageViewModel: AddRoutinePageViewModel =
+                                                koinViewModel { parametersOf(key) }
+                                            AddRoutinePage(addRoutinePageViewModel, backStack)
+                                        }
+                                    }
+
+                                    is Screen.RoutineDetailsPageRoute -> {
+                                        NavEntry(key = key) {
+                                            RoutineDetailsPage(
+                                                routineId = key.routineId,
+                                                backStack = backStack
+                                            )
+                                        }
+                                    }
+
+
+                                    else -> throw RuntimeException("Invalid NavKey.")
+                                }
+
+
+                            },
+                            transitionSpec = navigationForwardTransitionSpec,
+                            popTransitionSpec = predictiveTransition,
+                            predictivePopTransitionSpec = predictiveTransition
+                        )
+
                     }
                 }
 
-
-        }}
+            }
+        }
     }
 
     fun restartActivityOnImport(successful: Boolean) {

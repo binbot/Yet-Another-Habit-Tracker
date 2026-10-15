@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +30,7 @@ fun SettingsItem(
 ) {
     Row(
         modifier = Modifier.Companion
-            .clip(RoundedCornerShape(20.dp))
+            .clip(MaterialTheme.shapes.large)
             .clickable(onClick = { task() })
             .fillMaxWidth()
             .padding(
@@ -59,15 +58,12 @@ fun SettingsItem(
             Column(Modifier.Companion.fillMaxWidth()) {
                 Text(
                     title,
-                    style = TextStyle(fontWeight = FontWeight.Companion.Bold, fontSize = 20.sp)
+                    style = MaterialTheme.typography.titleMedium
                 )
                 description?.let {
                     Text(
                         description,
-                        style = TextStyle(
-                            fontWeight = FontWeight.Companion.Normal,
-                            fontSize = 15.sp
-                        ),
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }

@@ -73,7 +73,7 @@ import com.zavedahmad.yaHabit.database.utils.getShowArchive
 import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.ui.components.CardMyStyle
 import com.zavedahmad.yaHabit.ui.mainPage.habitItemReorderable.HabitItemReorderableNew
-import com.zavedahmad.yaHabit.ui.theme.ComposeTemplateTheme
+
 import com.zavedahmad.yaHabit.widgets.overviewWidget.MyAppWidget
 import kotlinx.coroutines.channels.Channel
 import sh.calvin.reorderable.ReorderableItem
@@ -122,13 +122,11 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
     }
 
     if (allPreferences.isEmpty()) {
-        ComposeTemplateTheme("system") {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-            )
-        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+        )
     } else {
 
 

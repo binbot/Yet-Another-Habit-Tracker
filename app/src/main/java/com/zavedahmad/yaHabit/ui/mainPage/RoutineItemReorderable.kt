@@ -45,7 +45,6 @@ import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.RoutineEntity
 import com.zavedahmad.yaHabit.database.entities.resolveDayState
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -74,7 +73,7 @@ fun RoutineItemReorderable(
             .fillMaxWidth()
             .padding(horizontal = 10.dp),
         colors = CardDefaults.outlinedCardColors(),
-        border = BorderStroke(width = LocalOutlineSizes.current.small, color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)),
+        border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant),
         onClick = {
             if (!isReorderableMode) expanded = !expanded
         }
@@ -93,11 +92,11 @@ fun RoutineItemReorderable(
                     Text(
                         routine.name,
                         maxLines = 1,
-                        style = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.alpha(alphaValue)
                     )
                     if (routine.description.isNotEmpty()) {
-                        Text(routine.description, maxLines = 1, style = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp), modifier = Modifier.alpha(alphaValue))
+                        Text(routine.description, maxLines = 1, style = MaterialTheme.typography.bodySmall, modifier = Modifier.alpha(alphaValue))
                     }
                     Text("${routineItems.size} steps • ${routine.frequency.toInt()}/${routine.cycle} per cycle", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

@@ -2,10 +2,10 @@ package com.zavedahmad.yaHabit.ui.addHabitPage
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -91,7 +91,7 @@ fun RepetitionPerDaySelector(viewModel: AddHabitPageViewModel) {
 
 
         },
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         keyboardOptions =
             KeyboardOptions(keyboardType = KeyboardType.Number)
     )

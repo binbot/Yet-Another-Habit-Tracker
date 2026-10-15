@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,7 +34,7 @@ fun MonthGrid(month: YearMonth, habitPastYear : List<HabitCompletionEntity>?) {
         items(month.atDay(1).dayOfWeek.value -1 ){
 
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(1.dp)).background(Color.Transparent)
+                modifier = Modifier.clip(MaterialTheme.shapes.extraSmall).background(Color.Transparent)
                     .fillMaxSize()
                     .aspectRatio(1f), // Ensures each box is square
                 contentAlignment = Alignment.Center
@@ -50,7 +49,7 @@ fun MonthGrid(month: YearMonth, habitPastYear : List<HabitCompletionEntity>?) {
             }
 
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(1.dp)).background(boxColor)
+                modifier = Modifier.clip(MaterialTheme.shapes.extraSmall).background(boxColor)
                     .fillMaxSize()
                     .aspectRatio(1f), // Ensures each box is square
                 contentAlignment = Alignment.Center
@@ -61,7 +60,7 @@ fun MonthGrid(month: YearMonth, habitPastYear : List<HabitCompletionEntity>?) {
         items(7- month.atDay(noOfDays).dayOfWeek.value  ){
 
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(1.dp)).background(Color.Transparent)
+                modifier = Modifier.clip(MaterialTheme.shapes.extraSmall).background(Color.Transparent)
                     .fillMaxSize()
                     .aspectRatio(1f), // Ensures each box is square
                 contentAlignment = Alignment.Center

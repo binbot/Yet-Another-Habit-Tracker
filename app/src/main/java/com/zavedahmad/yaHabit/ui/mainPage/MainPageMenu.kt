@@ -3,7 +3,6 @@ package com.zavedahmad.yaHabit.ui.mainPage
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Settings
@@ -27,8 +26,6 @@ import androidx.navigation3.runtime.NavKey
 import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.printFromDatabaseModule
 
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
-
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MainPageMenu(viewModel: MainPageViewModel, backStack: SnapshotStateList<NavKey>) {
@@ -49,11 +46,11 @@ fun MainPageMenu(viewModel: MainPageViewModel, backStack: SnapshotStateList<NavK
         }
         DropdownMenu(
             modifier = Modifier.Companion.border(
-                width = LocalOutlineSizes.current.small,
-                shape = RoundedCornerShape(10.dp),
+                width = 1.dp,
+                shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.outline
             ),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            shape = MaterialTheme.shapes.medium,
             expanded = menuVisible.value, // Set to true to show the menu
             onDismissRequest = { menuVisible.value = false }
         ) {

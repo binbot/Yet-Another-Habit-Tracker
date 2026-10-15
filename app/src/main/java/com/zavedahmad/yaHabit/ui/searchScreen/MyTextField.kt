@@ -61,8 +61,7 @@ fun MyTextField(
         BasicTextField(
             modifier = Modifier.fillMaxSize().padding(vertical = 10.dp),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSecondaryContainer),
-            textStyle = TextStyle(
-                fontSize = 20.sp,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             ),
             state = basicTextFiledState,
@@ -74,7 +73,7 @@ fun MyTextField(
                     Text(
                         text = placeholder,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
-                        fontSize = 20.sp
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
                 innerTextField()

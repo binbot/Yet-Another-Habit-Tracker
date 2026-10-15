@@ -490,7 +490,7 @@ fun InvalidValueIndicator(modifier: Modifier = Modifier, visible: Boolean) {
                 "Invalid Values",
                 Modifier.padding(5.dp),
                 color = MaterialTheme.colorScheme.onError,
-                fontSize = 15.sp,
+                style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

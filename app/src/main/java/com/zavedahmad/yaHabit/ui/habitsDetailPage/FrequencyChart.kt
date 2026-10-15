@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -102,7 +101,7 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
             labelProperties = LabelProperties(
                 enabled = true,
                 builder = { modifier, label, shouldRotate, index ->
-                    Text(label, style = TextStyle(fontSize = 10.sp))
+                    Text(label, style = MaterialTheme.typography.labelSmall)
                 }
             ),
             labelHelperProperties = LabelHelperProperties(enabled = false)
@@ -117,19 +116,19 @@ fun FrequencyChart(habitAllData: List<HabitCompletionEntity>?, habitEntity: Habi
                 Modifier
                     .padding(end = 4.dp)
                     .size(12.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(habitEntity.color)
             )
-            Text(if (habitEntity.isNegative) "Clean" else "Met", fontSize = 11.sp)
+            Text(if (habitEntity.isNegative) "Clean" else "Met", style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.width(10.dp))
             Box(
                 Modifier
                     .padding(end = 4.dp)
                     .size(12.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(MissedRed.copy(alpha = 0.5f))
             )
-            Text(if (habitEntity.isNegative) "Over limit" else "Missed", fontSize = 11.sp)
+            Text(if (habitEntity.isNegative) "Over limit" else "Missed", style = MaterialTheme.typography.labelSmall)
         }
     }
 

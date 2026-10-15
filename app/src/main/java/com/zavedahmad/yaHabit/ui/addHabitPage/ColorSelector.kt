@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
@@ -39,7 +38,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
+import com.zavedahmad.yaHabit.ui.theme.YaHabitTheme
 
 @Composable
 fun ColorSelector(viewModel: AddHabitPageViewModel) {
@@ -85,7 +84,7 @@ fun ColorSelector(viewModel: AddHabitPageViewModel) {
                         .size(60.dp), contentAlignment = Alignment.Center
                 ) {
 
-                    CustomTheme(primaryColor = color, theme = theme?.value ?: "system") {
+                    YaHabitTheme(primaryColor = color, theme = theme?.value ?: "system") {
                         Box(
                             Modifier
                                 .fillMaxSize()
@@ -95,7 +94,7 @@ fun ColorSelector(viewModel: AddHabitPageViewModel) {
                                     MaterialTheme.colorScheme.primary,
                                     MaterialShapes.Cookie12Sided.toShape()
                                 )
-                                .background(MaterialTheme.colorScheme.surfaceDim),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(

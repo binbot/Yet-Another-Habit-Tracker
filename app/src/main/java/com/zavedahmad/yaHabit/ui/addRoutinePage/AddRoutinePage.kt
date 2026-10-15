@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -55,7 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import com.zavedahmad.yaHabit.ui.addHabitPage.ColorSelector
 import com.zavedahmad.yaHabit.ui.addHabitPage.FrequencySelector
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
+import com.zavedahmad.yaHabit.ui.theme.YaHabitTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +69,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
     val errorCommon = remember { derivedStateOf { isNameError.value || frequencyError.value } }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
-    CustomTheme(primaryColor = selectedColor, isAmoled = false, theme = "system") {
+    YaHabitTheme(primaryColor = selectedColor, isAmoled = false, theme = "system") {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
@@ -106,7 +105,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                     value = name,
                     placeholder = { Text("Routine name", fontStyle = FontStyle.Italic, color = Color.Gray) },
                     onValueChange = { viewModel.setRoutineName(it) },
-                    shape = RoundedCornerShape(50.dp),
+                    shape = MaterialTheme.shapes.large,
                     singleLine = true
                 )
                 Spacer(Modifier.height(20.dp))
@@ -116,7 +115,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                     placeholder = { Text("Description", fontStyle = FontStyle.Italic, color = Color.Gray) },
                     onValueChange = { viewModel.setRoutineDescription(it) },
                     colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.large,
                     maxLines = 4
                 )
                 Heading("Target Days")
@@ -137,8 +136,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                             FilterChip(
                                 selected = selected,
                                 onClick = { viewModel.toggleHabitSelection(habit.id) },
-                                label = { Text(habit.name) },
-                                shape = RoundedCornerShape(50.dp)
+                                label = { Text(habit.name) }
                             )
                         }
                     }
@@ -158,7 +156,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
 @Composable
 private fun Heading(heading: String) {
     Spacer(Modifier.height(20.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) { Text(heading, fontSize = 20.sp) }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) { Text(heading, style = MaterialTheme.typography.titleMedium) }
     HorizontalDivider()
     Spacer(Modifier.height(20.dp))
 }
@@ -179,7 +177,6 @@ private fun RoutineColorSelector(viewModel: AddRoutinePageViewModel) {
                     selected = isSelected,
                     onClick = { viewModel.setColor(c) },
                     label = { },
-                    shape = RoundedCornerShape(50.dp),
                     colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                         selectedContainerColor = c, containerColor = c.copy(alpha = 0.3f)
                     )
@@ -197,9 +194,9 @@ private fun RoutineFrequencySelector(viewModel: AddRoutinePageViewModel) {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY) }, label = { Text("Daily") }, shape = RoundedCornerShape(50.dp))
-            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY) }, label = { Text("Weekly") }, shape = RoundedCornerShape(50.dp))
-            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM) }, label = { Text("Custom") }, shape = RoundedCornerShape(50.dp))
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY) }, label = { Text("Daily") })
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.WEEKLY) }, label = { Text("Weekly") })
+            FilterChip(selected = streakType == com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM, onClick = { viewModel.setStreakType(com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM) }, label = { Text("Custom") })
         }
         when (streakType) {
             com.zavedahmad.yaHabit.database.enums.HabitStreakType.DAILY -> Text("Every day", style = MaterialTheme.typography.bodySmall)
@@ -213,8 +210,8 @@ private fun RoutineFrequencySelector(viewModel: AddRoutinePageViewModel) {
             com.zavedahmad.yaHabit.database.enums.HabitStreakType.MONTHLY -> Text("Every day", style = MaterialTheme.typography.bodySmall)
             com.zavedahmad.yaHabit.database.enums.HabitStreakType.CUSTOM -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = (frequency ?: 5.0).toString(), onValueChange = { it.toDoubleOrNull()?.let { v -> viewModel.setFrequency(v) } }, label = { Text("Times") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
-                    OutlinedTextField(value = (cycle ?: 7).toString(), onValueChange = { it.toIntOrNull()?.let { v -> viewModel.setCycle(v) } }, label = { Text("Days") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true)
+                    OutlinedTextField(value = (frequency ?: 5.0).toString(), onValueChange = { it.toDoubleOrNull()?.let { v -> viewModel.setFrequency(v) } }, label = { Text("Times") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large, singleLine = true)
+                    OutlinedTextField(value = (cycle ?: 7).toString(), onValueChange = { it.toIntOrNull()?.let { v -> viewModel.setCycle(v) } }, label = { Text("Days") }, modifier = Modifier.weight(1f), shape = MaterialTheme.shapes.large, singleLine = true)
                 }
             }
         }
