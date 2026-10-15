@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -106,7 +105,7 @@ fun AboutPage(backStack: SnapshotStateList<NavKey>, viewModel: AboutPageViewMode
                     Text("YA Habit Tracker", style = MaterialTheme.typography.titleLargeEmphasized)
                     Text(
                         "Version " + stringResource(R.string.app_version),
-                        style = TextStyle(fontWeight = FontWeight.Normal, fontSize = 15.sp),
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }

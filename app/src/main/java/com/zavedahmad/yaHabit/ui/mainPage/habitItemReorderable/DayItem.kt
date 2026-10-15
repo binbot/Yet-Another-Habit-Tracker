@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -39,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.R
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
 import java.time.LocalDate
 
@@ -110,9 +108,10 @@ fun DayItem(
 
     ) {
         Box(
-            Modifier.clip(   shape = RoundedCornerShape(10.dp),)
+            Modifier
+                .clip(MaterialTheme.shapes.medium)
                 .background(bgColor)
-                .border(width = LocalOutlineSizes.current.small, color = borderColor, shape = RoundedCornerShape(10.dp))
+                .border(width = 1.dp, color = borderColor, shape = MaterialTheme.shapes.medium)
 
 
 

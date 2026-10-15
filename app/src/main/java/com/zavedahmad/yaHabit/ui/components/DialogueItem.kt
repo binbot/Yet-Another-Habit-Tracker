@@ -5,13 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 
 @Composable
 fun DialogItem(
@@ -23,11 +21,11 @@ fun DialogItem(
 
     Box(
         modifier
-            .clip(RoundedCornerShape(10.dp)).background(    MaterialTheme.colorScheme.surfaceDim)
-            .border(shape = RoundedCornerShape(10.dp),
+            .clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(shape = MaterialTheme.shapes.medium,
                 border = BorderStroke(
-                    width = LocalOutlineSizes.current.small,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
                 )
             )
 

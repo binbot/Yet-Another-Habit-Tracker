@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -110,13 +110,13 @@ fun SettingsScreen(
                         Text(
                             "Theme Mode",
                             modifier = Modifier.padding(start = 10.dp),
-                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            style = MaterialTheme.typography.titleLarge
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(MaterialTheme.shapes.large)
                                 .clickable(onClick = {
                                     viewModel.setTheme("system")
 
@@ -135,7 +135,7 @@ fun SettingsScreen(
                         }
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(MaterialTheme.shapes.large)
                                 .clickable(onClick = {
                                     viewModel.setTheme("dark")
                                     isThemeDialogActive = false
@@ -153,7 +153,7 @@ fun SettingsScreen(
                         }
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(MaterialTheme.shapes.large)
                                 .clickable(onClick = {
                                     viewModel.setTheme("light")
                                     isThemeDialogActive = false

@@ -16,7 +16,7 @@ fun CardMyStyle(modifier : Modifier = Modifier, content :  @Composable () -> Uni
 
            ,
 
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceDim),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         content()
     }

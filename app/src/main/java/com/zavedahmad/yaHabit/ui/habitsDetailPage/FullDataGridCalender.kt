@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -98,7 +97,7 @@ fun FullDataGridCalender(
                     horizontalArrangement = Arrangement.Start
                 ) {
                     Spacer(Modifier.width(5.dp))
-                    Text(weekDay.name.slice(0..2), fontSize = 15.sp)
+                    Text(weekDay.name.slice(0..2), style = MaterialTheme.typography.bodySmall)
                 }
             },
             monthHeader = {
@@ -109,7 +108,7 @@ fun FullDataGridCalender(
                     ) {
                         Text(
                             it.yearMonth.month.toString().slice(0..2),
-                            fontSize = 15.sp, textAlign = TextAlign.Start
+                            style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Start
                         )
                     }
                 } else {
@@ -120,7 +119,7 @@ fun FullDataGridCalender(
                         ) {
                             Text(
                                 it.yearMonth.month.toString().slice(0..2),
-                                fontSize = 15.sp, textAlign = TextAlign.Start
+                                style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Start
                             )
                         }
                     } else {
@@ -200,14 +199,14 @@ fun FullDataGridCalender(
                     Modifier
                         .padding(end = 3.dp)
                         .size(12.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .background(cs.primary.copy(alpha = alpha))
                 )
             }
             Spacer(Modifier.width(5.dp))
             Text(
                 "0-" + formatNumberToReadable(habitEntity.repetitionPerDay) + " " + habitEntity.measurementUnit,
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant
             )
             LegendSwatch(color = cs.tertiaryContainer, label = "Skipped")
@@ -224,10 +223,10 @@ private fun LegendSwatch(color: Color, label: String) {
         Box(
             Modifier
                 .size(12.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .clip(MaterialTheme.shapes.extraSmall)
                 .background(color)
         )
         Spacer(Modifier.width(3.dp))
-        Text(label, fontSize = 11.sp)
+        Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }

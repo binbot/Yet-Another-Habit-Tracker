@@ -93,10 +93,7 @@ fun FilterSectionHeading(text: String, bottomPadding: Boolean = true) {
         Text(
             text,
             color = MaterialTheme.colorScheme.primary,
-            fontSize = 12.sp,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Companion.Medium,
-            letterSpacing = 3.sp
+            style = MaterialTheme.typography.labelMedium
         )
     }
     if (bottomPadding) {

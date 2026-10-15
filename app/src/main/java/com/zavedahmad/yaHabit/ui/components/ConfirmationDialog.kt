@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -47,7 +46,7 @@ fun ConfirmationDialog(
                 containerColor = MaterialTheme.colorScheme.surface),
 
 
-                shape = RoundedCornerShape(20.dp)
+                shape = MaterialTheme.shapes.extraLarge
             ) {
                 Column(Modifier.padding(30.dp)) {
                     title?.let {

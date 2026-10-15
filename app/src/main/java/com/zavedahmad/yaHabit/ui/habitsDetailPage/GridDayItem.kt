@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -65,7 +64,7 @@ fun GridDayItem(
     Box(
         modifier
             .fillMaxSize()
-            .clip(shape = RoundedCornerShape(5.dp))
+            .clip(shape = MaterialTheme.shapes.extraSmall)
             .background(color = bg),
         contentAlignment = Alignment.BottomEnd
     ) {

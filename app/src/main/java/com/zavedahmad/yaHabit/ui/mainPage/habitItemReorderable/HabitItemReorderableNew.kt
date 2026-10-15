@@ -54,7 +54,6 @@ import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import com.zavedahmad.yaHabit.ui.mainPage.DialogueForHabit
 import com.zavedahmad.yaHabit.ui.mainPage.MainPageViewModel
-import com.zavedahmad.yaHabit.ui.theme.LocalOutlineSizes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -148,8 +147,8 @@ fun HabitItemReorderableNew(
 
         colors = color,
         border = BorderStroke(
-            width = LocalOutlineSizes.current.small,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant
         ),
         onClick = {
             if (!isReorderableMode) {
@@ -220,11 +219,7 @@ fun HabitItemReorderableNew(
 
                             maxLines = 1,
                             overflow = TextOverflow.Companion.Ellipsis,
-                            style = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 30.sp,
-                                fontWeight = FontWeight.Companion.Bold
-                            ),
+                            style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier.alpha(alphaValue).weight(1f, fill = false)
                         )
                         if (habit.reminderEnabled) {
@@ -243,11 +238,7 @@ fun HabitItemReorderableNew(
 
                             maxLines = 2,
                             overflow = TextOverflow.Companion.Ellipsis,
-                            style = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Companion.Bold
-                            )
+                            style = MaterialTheme.typography.bodySmall
                         )
 
                     }

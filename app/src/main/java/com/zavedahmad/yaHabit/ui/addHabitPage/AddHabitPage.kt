@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -69,7 +68,7 @@ import com.zavedahmad.yaHabit.Screen
 import com.zavedahmad.yaHabit.database.utils.getAmoledThemeMode
 import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.ui.components.MyTopABCommon
-import com.zavedahmad.yaHabit.ui.theme.CustomTheme
+import com.zavedahmad.yaHabit.ui.theme.YaHabitTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -117,7 +116,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
         }
 
 
-        CustomTheme(
+        YaHabitTheme(
             isAmoled = allPreferences.getAmoledThemeMode(),
             theme = allPreferences.getTheme(),
             primaryColor = setColor.value,
@@ -176,7 +175,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                        Text("Basic", fontSize = 20.sp)
+                        Text("Basic", style = MaterialTheme.typography.titleMedium)
                     }
                     HorizontalDivider()
                     Spacer(Modifier.height(20.dp))
@@ -231,7 +230,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                             viewModel.setHabitName(it)
                         },
 
-                        shape = RoundedCornerShape(50.dp),
+                        shape = MaterialTheme.shapes.large,
                         isError = false,
                         singleLine = true,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -268,7 +267,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = MaterialTheme.shapes.large,
                         maxLines = 8
 
                     )
@@ -306,7 +305,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = MaterialTheme.shapes.large,
                         maxLines = 1
 
 
@@ -329,7 +328,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
 private fun Heading(heading: String) {
     Spacer(Modifier.height(20.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-        Text(heading, fontSize = 20.sp)
+        Text(heading, style = MaterialTheme.typography.titleMedium)
     }
     HorizontalDivider()
     Spacer(Modifier.height(20.dp))
@@ -347,7 +346,7 @@ private fun ReminderSection(viewModel: AddHabitPageViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
@@ -382,7 +381,7 @@ private fun ReminderSection(viewModel: AddHabitPageViewModel) {
     if (showPicker) {
         val state = rememberTimePickerState(initialHour = hour ?: 9, initialMinute = minute ?: 0, is24Hour = true)
         androidx.compose.ui.window.Dialog(onDismissRequest = { showPicker = false }) {
-            Card(shape = RoundedCornerShape(20.dp)) {
+            Card(shape = MaterialTheme.shapes.extraLarge) {
                 Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     TimePicker(state = state)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
