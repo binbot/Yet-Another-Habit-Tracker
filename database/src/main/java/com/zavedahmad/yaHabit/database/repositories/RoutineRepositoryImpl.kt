@@ -2,7 +2,6 @@ package com.zavedahmad.yaHabit.database.repositories
 
 import androidx.room.withTransaction
 import com.zavedahmad.yaHabit.database.MainDatabase
-import com.zavedahmad.yaHabit.database.daos.HabitDao
 import com.zavedahmad.yaHabit.database.daos.RoutineDao
 import com.zavedahmad.yaHabit.database.daos.RoutineItemDao
 import com.zavedahmad.yaHabit.database.daos.RoutineStepCompletionDao
@@ -19,41 +18,17 @@ class RoutineRepositoryImpl(
     private val routineItemDao: RoutineItemDao,
     private val routineStepDao: RoutineStepDao,
     private val routineStepCompletionDao: RoutineStepCompletionDao,
-    private val habitDao: HabitDao,
     private val db: MainDatabase
 ) : RoutineRepository {
 
-    override suspend fun addRoutine(routine: RoutineEntity, habitIds: List<Int>): Long {
+    override suspend fun addRoutine(routine: RoutineEntity): Long {
         val max = routineDao.getMaxIndex()
         val index = max?.let { it + 1 } ?: 0
-        val id = routineDao.upsert(routine.copy(index = index))
-        val items = habitIds.mapIndexed { idx, hid -> RoutineItemEntity(routineId = id.toInt(), habitId = hid, index = idx) }
-        if (items.isNotEmpty()) routineItemDao.upsertAll(items)
-        // Transitional: keep first-class steps in sync with the habit-linked items so routines
-        // created before the step UI lands still have steps once it arrives.
-        seedStepsFromHabits(id.toInt(), habitIds)
-        return id
+        return routineDao.upsert(routine.copy(index = index))
     }
 
-    override suspend fun editRoutine(routine: RoutineEntity, habitIds: List<Int>) {
-        db.withTransaction {
-            routineDao.upsert(routine)
-            routineItemDao.deleteAllForRoutine(routine.id)
-            val items = habitIds.mapIndexed { idx, hid -> RoutineItemEntity(routineId = routine.id, habitId = hid, index = idx) }
-            if (items.isNotEmpty()) routineItemDao.upsertAll(items)
-            seedStepsFromHabits(routine.id, habitIds)
-        }
-    }
-
-    /** Copies the chosen habits into first-class steps (name/description only, no live link). */
-    private suspend fun seedStepsFromHabits(routineId: Int, habitIds: List<Int>) {
-        routineStepDao.deleteAllForRoutine(routineId)
-        if (habitIds.isEmpty()) return
-        val steps = habitIds.mapIndexed { idx, hid ->
-            val habit = habitDao.getHabitById(hid)
-            RoutineStepEntity(routineId = routineId, name = habit.name, description = habit.description, position = idx)
-        }
-        routineStepDao.upsertAll(steps)
+    override suspend fun editRoutine(routine: RoutineEntity) {
+        routineDao.upsert(routine)
     }
 
     override suspend fun deleteRoutine(id: Int) {
@@ -144,6 +119,17 @@ class RoutineRepositoryImpl(
             routineStepDao.pluck(routineId, from.position)
             routineStepDao.vacant(routineId, toPosition)
             routineStepDao.changePosition(toPosition, from.id)
+        }
+    }
+
+    override suspend fun setStepsForRoutine(routineId: Int, steps: List<RoutineStepEntity>) {
+        db.withTransaction {
+            val existing = routineStepDao.getStepsForRoutine(routineId)
+            val keptIds = steps.map { it.id }.filter { it > 0 }.toSet()
+            existing.filter { it.id !in keptIds }.forEach { routineStepDao.deleteById(it.id) }
+            steps.forEachIndexed { idx, step ->
+                routineStepDao.upsert(step.copy(routineId = routineId, position = idx))
+            }
         }
     }
 

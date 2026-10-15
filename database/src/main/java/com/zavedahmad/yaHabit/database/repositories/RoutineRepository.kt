@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 interface RoutineRepository {
-    suspend fun addRoutine(routine: RoutineEntity, habitIds: List<Int>): Long
-    suspend fun editRoutine(routine: RoutineEntity, habitIds: List<Int>)
+    suspend fun addRoutine(routine: RoutineEntity): Long
+    suspend fun editRoutine(routine: RoutineEntity)
     suspend fun deleteRoutine(id: Int)
     fun getRoutinesFlowSorted(): Flow<List<RoutineEntity>>
     suspend fun getRoutineById(id: Int): RoutineEntity
@@ -29,6 +29,13 @@ interface RoutineRepository {
     suspend fun updateStep(step: RoutineStepEntity)
     suspend fun deleteStep(stepId: Int)
     suspend fun moveStepInRoutine(routineId: Int, fromPosition: Int, toPosition: Int)
+
+    /**
+     * Reconciles the routine's steps with [steps]: existing rows (id > 0) are updated in place so
+     * their completion history is preserved, new rows (id == 0) are inserted, and rows missing
+     * from [steps] are deleted. [steps] order becomes the step order.
+     */
+    suspend fun setStepsForRoutine(routineId: Int, steps: List<RoutineStepEntity>)
 
     fun getStepCompletionsForDateFlow(date: LocalDate): Flow<List<RoutineStepCompletionEntity>>
     fun getStepCompletionsForStepFlow(stepId: Int): Flow<List<RoutineStepCompletionEntity>>

@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import com.zavedahmad.yaHabit.database.entities.isSkip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,19 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.NavBackStack
 import com.zavedahmad.yaHabit.Screen
-import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
-import com.zavedahmad.yaHabit.database.entities.DayState
-import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.RoutineEntity
-import com.zavedahmad.yaHabit.database.entities.resolveDayState
+import com.zavedahmad.yaHabit.database.entities.RoutineStepEntity
+import com.zavedahmad.yaHabit.ui.components.ConfirmationDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -65,23 +58,19 @@ fun RoutineItemReorderable(
     val coroutineScope = rememberCoroutineScope()
     val isArchived = routine.isArchived
     val alphaValue = if (isArchived) 0.5f else 1f
-
-    val routineItems by viewModel.routineRepository.getItemsForRoutineFlow(routine.id).collectAsStateWithLifecycle(initialValue = emptyList())
-    val habits = viewModel.habits.collectAsStateWithLifecycle().value
-    val habitMap = remember(habits) { habits.associateBy { it.id } }
     val showDeleteDialog = rememberSaveable { mutableStateOf(false) }
 
+    val steps by viewModel.routineRepository.getStepsForRoutineFlow(routine.id)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val today = LocalDate.now()
-    val todayCompletions by viewModel.habitRepository.getTodayCompletionsFlow()
-        .collectAsStateWithLifecycle(initialValue = emptyMap())
+    val todayCompletions by viewModel.routineRepository.getStepCompletionsForDateFlow(today)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val completionByStep = remember(todayCompletions) { todayCompletions.associateBy { it.stepId } }
 
     // A routine is met for today once every step is done or skipped (skip is neutral).
-    val metToday = routineItems.isNotEmpty() && routineItems.all { item ->
-        val habit = habitMap[item.habitId] ?: return@all false
-        when (resolveDayState(habit, todayCompletions[item.habitId], today, today)) {
-            DayState.Absolute, DayState.AbsoluteMore, DayState.NegativeCount, DayState.Skip -> true
-            else -> false
-        }
+    val metToday = steps.isNotEmpty() && steps.all { step ->
+        val c = completionByStep[step.id]
+        c?.isDone == true || c?.isSkip == true
     }
 
     ConfirmationDialog(
@@ -106,7 +95,7 @@ fun RoutineItemReorderable(
         }
     ) {
         // Color accent bar to make routine color visible in list (parity with habit color theming)
-        androidx.compose.foundation.layout.Box(
+        Box(
             modifier = Modifier.fillMaxWidth().height(4.dp).background(routine.color)
         )
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -125,7 +114,7 @@ fun RoutineItemReorderable(
                     if (routine.description.isNotEmpty()) {
                         Text(routine.description, maxLines = 1, style = MaterialTheme.typography.bodySmall, modifier = Modifier.alpha(alphaValue))
                     }
-                    Text("${routineItems.size} steps • ${routine.frequency.toInt()}/${routine.cycle} per cycle", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${steps.size} steps • ${routine.frequency.toInt()}/${routine.cycle} per cycle", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (metToday) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -141,18 +130,12 @@ fun RoutineItemReorderable(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!isReorderableMode) {
-                        // Routine-level skip — marks all steps for today as skipped to help partially completed stats
+                        // Routine-level skip — marks every step for today as skipped.
                         IconButton(onClick = {
+                            val allSkipped = steps.isNotEmpty() && steps.all { completionByStep[it.id]?.isSkip == true }
                             coroutineScope.launch(Dispatchers.IO) {
                                 val todayS = LocalDate.now()
-                                // Determine if routine today is already all skipped
-                                val items = viewModel.routineRepository.getItemsForRoutine(routine.id)
-                                val allAreSkipped = items.all { ri ->
-                                    viewModel.habitRepository.getAllHabitCompletionsById(ri.habitId)?.firstOrNull { it.completionDate == todayS }?.isSkip() == true
-                                }
-                                items.forEach { ri ->
-                                    viewModel.habitRepository.setSkip(todayS, ri.habitId, !allAreSkipped)
-                                }
+                                steps.forEach { s -> viewModel.routineRepository.setStepSkip(s.id, todayS, !allSkipped) }
                             }
                         }) {
                             Icon(Icons.Default.DoubleArrow, contentDescription = "skip routine", tint = MaterialTheme.colorScheme.tertiary)
@@ -169,18 +152,22 @@ fun RoutineItemReorderable(
             AnimatedVisibility(visible = expanded && !isReorderableMode) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     HorizontalDivider()
-                    if (routineItems.isEmpty()) {
-                        Text("No habits added — edit routine to add steps", style = MaterialTheme.typography.bodySmall)
+                    if (steps.isEmpty()) {
+                        Text("No steps yet — edit routine to add steps", style = MaterialTheme.typography.bodySmall)
                     } else {
-                        routineItems.forEach { item ->
-                            val habit: HabitEntity? = habitMap[item.habitId]
-                            if (habit != null) {
-                                RoutineStepRow(
-                                    habit = habit,
-                                    viewModel = viewModel,
-                                    today = today
-                                )
-                            }
+                        steps.forEach { step ->
+                            RoutineStepRow(
+                                step = step,
+                                done = completionByStep[step.id]?.isDone == true,
+                                skipped = completionByStep[step.id]?.isSkip == true,
+                                onToggleDone = { done ->
+                                    coroutineScope.launch(Dispatchers.IO) { viewModel.routineRepository.setStepDone(step.id, today, done) }
+                                },
+                                onToggleSkip = {
+                                    val newSkip = completionByStep[step.id]?.isSkip != true
+                                    coroutineScope.launch(Dispatchers.IO) { viewModel.routineRepository.setStepSkip(step.id, today, newSkip) }
+                                }
+                            )
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             androidx.compose.material3.TextButton(onClick = { backStack.add(Screen.AddRoutinePageRoute(routineId = routine.id)) }) {
@@ -195,39 +182,33 @@ fun RoutineItemReorderable(
 }
 
 @Composable
-private fun RoutineStepRow(habit: HabitEntity, viewModel: MainPageViewModel, today: LocalDate) {
-    val completions by viewModel.habitRepository.getAllHabitCompletionsByIdFlow(habit.id).collectAsStateWithLifecycle(initialValue = emptyList())
-    val entry = completions?.firstOrNull { it.completionDate == today }
-    val state = resolveDayState(habit, entry, today, today)
-    val checked = state == DayState.Absolute || state == DayState.AbsoluteMore || state == DayState.NegativeCount
-    val isSkipped = state == DayState.Skip
-    val coroutineScope = rememberCoroutineScope()
+private fun RoutineStepRow(
+    step: RoutineStepEntity,
+    done: Boolean,
+    skipped: Boolean,
+    onToggleDone: (Boolean) -> Unit,
+    onToggleSkip: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(habit.name, style = MaterialTheme.typography.bodyMedium)
-            Text("${habit.repetitionPerDay} ${habit.measurementUnit}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(step.name, style = MaterialTheme.typography.bodyMedium)
+            if (step.description.isNotEmpty()) {
+                Text(step.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {
-                coroutineScope.launch(Dispatchers.IO) {
-                    viewModel.habitRepository.setSkip(today, habit.id, !isSkipped)
-                }
-            }) {
-                Icon(Icons.Default.DoubleArrow, contentDescription = if (isSkipped) "unskip" else "skip", tint = if (isSkipped) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
+            IconButton(onClick = onToggleSkip) {
+                Icon(
+                    Icons.Default.DoubleArrow,
+                    contentDescription = if (skipped) "unskip" else "skip",
+                    tint = if (skipped) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Checkbox(
-                checked = checked,
-                onCheckedChange = {
-                    coroutineScope.launch(Dispatchers.IO) {
-                        if (checked) viewModel.habitRepository.decrementRepetitions(today, habit.id)
-                        else viewModel.habitRepository.incrementRepetitions(today, habit.id)
-                    }
-                }
-            )
+            Checkbox(checked = done, onCheckedChange = onToggleDone)
         }
     }
 }
