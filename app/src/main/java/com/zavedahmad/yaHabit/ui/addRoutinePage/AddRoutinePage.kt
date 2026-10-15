@@ -84,6 +84,7 @@ fun AddRoutinePage(viewModel: AddRoutinePageViewModel, backStack: NavBackStack) 
                         AnimatedVisibility(visible = !errorCommon.value, enter = fadeIn(), exit = fadeOut()) {
                             Button(
                                 onClick = { viewModel.saveRoutine(); backStack.removeLastOrNull() },
+                                shape = MaterialTheme.shapes.medium,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) { Icon(Icons.Default.Check, contentDescription = "save") }
                         }

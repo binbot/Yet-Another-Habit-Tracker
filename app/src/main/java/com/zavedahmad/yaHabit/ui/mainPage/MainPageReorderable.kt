@@ -350,11 +350,13 @@ fun MainPageReorderable(backStack: SnapshotStateList<NavKey>, viewModel: MainPag
                         Text("Add new", style = MaterialTheme.typography.titleLarge)
                         androidx.compose.material3.Button(
                             onClick = { showAddDialog = false; backStack.add(Screen.AddHabitPageRoute()) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium
                         ) { Text("Habit") }
                         androidx.compose.material3.Button(
                             onClick = { showAddDialog = false; backStack.add(Screen.AddRoutinePageRoute()) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium
                         ) { Text("Routine") }
                         androidx.compose.material3.TextButton(onClick = { showAddDialog = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancel") }
                     }

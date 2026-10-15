@@ -150,6 +150,7 @@ fun AddHabitPage(viewModel: AddHabitPageViewModel, backStack: NavBackStack) {
 
                                     },
                                     modifier = Modifier,
+                                    shape = MaterialTheme.shapes.medium,
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                 ) { Icon(Icons.Default.Check, contentDescription = "add Habit") }
                             }
@@ -366,7 +367,7 @@ private fun ReminderSection(viewModel: AddHabitPageViewModel) {
             }
             if (enabled) {
                 val timeText = if (hour != null && minute != null) String.format("%02d:%02d", hour, minute) else "09:00"
-                Button(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                     Text(timeText)
                 }
                 Text(

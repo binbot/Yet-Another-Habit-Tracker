@@ -115,21 +115,28 @@ fun DialogueForHabit(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         if (isSkipState.value) {
-                            Button(onClick = {
-                                isSkipState.value = false
-                                onSkipChanged(false)
-                                onDismissRequest()
-                            }) { Text("Restore Day") }
+                            Button(
+                                onClick = {
+                                    isSkipState.value = false
+                                    onSkipChanged(false)
+                                    onDismissRequest()
+                                },
+                                shape = MaterialTheme.shapes.medium
+                            ) { Text("Restore Day") }
                         } else {
-                            androidx.compose.material3.OutlinedButton(onClick = {
-                                isSkipState.value = true
-                                repetitions.value = ""
-                                onSkipChanged(true)
-                                onDismissRequest()
-                            }) { Text("Skip Day") }
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = {
+                                    isSkipState.value = true
+                                    repetitions.value = ""
+                                    onSkipChanged(true)
+                                    onDismissRequest()
+                                },
+                                shape = MaterialTheme.shapes.medium
+                            ) { Text("Skip Day") }
                         }
                         Button(
                             enabled = !isSkipState.value,
+                            shape = MaterialTheme.shapes.medium,
                             onClick = {
                                 onFinalised(
                                     isRepetitionsValueChanged.value,

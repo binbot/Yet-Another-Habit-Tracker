@@ -55,7 +55,10 @@ fun ErrorPage(paddingValues: PaddingValues,error : String, isLoading: Boolean , 
                           tint = MaterialTheme.colorScheme.onSecondaryContainer
                       )
                       Text("Either you Api is Not set Or is Invalid",textAlign = TextAlign.Center)
-                      Button(onClick = { backStack.add(Screen.SettingsPageRoute) }) {
+                      Button(
+                          onClick = { backStack.add(Screen.SettingsPageRoute) },
+                          shape = MaterialTheme.shapes.medium
+                      ) {
                           Text( text = "Go to settings to change it")
                       }
                   }
