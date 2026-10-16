@@ -66,6 +66,44 @@ git push github master
 - The project uses pre-release toolchains (Kotlin 2.2.0-RC2, Navigation 3,
   Compose alpha). If a fresh checkout fails to build, verify Gradle
   distribution + SDK licenses first (`sdkmanager --licenses`).
+- This is NixOS. The prebuilt SDK binaries (aapt2, etc.) need nix-ld enabled.
+  If `adb`/Gradle tooling misbehaves, confirm `programs.nix-ld.enable` and its
+  `libraries` (`zlib`, `stdenv.cc.cc.lib`, `expat`) are set in
+  `/etc/nixos/configuration.nix`.
+- `local.properties` (gitignored) sets `sdk.dir=/home/b/Android/Sdk`.
+
+### Fresh machine bootstrap (NixOS)
+
+Bringing a new machine (or re-provisioning this one) up to dev-ready:
+
+1. In `/etc/nixos/configuration.nix` add (then `sudo nixos-rebuild switch`):
+   - `programs.nix-ld.enable = true;` and
+     `programs.nix-ld.libraries = with pkgs; [ zlib stdenv.cc.cc.lib expat ];`
+   - `android-tools` and `jdk17` in `environment.systemPackages`.
+   - `ANDROID_HOME = "/home/b/Android/Sdk";` in `environment.sessionVariables`.
+   - USB device access works automatically via systemd uaccess (no udev
+     package needed on modern NixOS).
+2. Install the SDK manually (no Android Studio), after
+   `mkdir -p ~/Android/Sdk/cmdline-tools && cd ~/Android/Sdk/cmdline-tools`:
+   ```sh
+   curl -sS -o cmdline-tools.zip \
+     "https://dl.google.com/android/repository/commandlinetools-linux-<latest>_latest.zip"
+   unzip -q cmdline-tools.zip && mv cmdline-tools latest && rm cmdline-tools.zip
+   yes | ~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --licenses
+   ~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk \
+     "platform-tools" "platforms;android-36" "platforms;android-35" "build-tools;35.0.0"
+   ```
+3. Create the gitignored `local.properties` with `sdk.dir=/home/b/Android/Sdk`.
+4. Verify: `./gradlew :app:assembleDebug` then install on the Pixel via adb.
+
+Note: a hard machine restart mid-build can corrupt the Gradle transform cache
+(`~/.gradle/caches/<ver>/transforms/.../metadata.bin`), producing obscure
+`NoClassDefFoundError`/`output.bin` errors. Fix: stop the Gradle daemon
+(`./gradlew --stop`) and delete `~/.gradle/caches/<ver>/transforms`.
+
+Memory: the first (cold) build is the heavy one; incremental builds are light.
+But the Gradle + Kotlin daemons stay resident and hold ~4GB idle. If the machine
+(no swap) feels taxed after a session, reclaim RAM with `./gradlew --stop`.
 
 ## Data safety
 
@@ -74,6 +112,15 @@ git push github master
   than wiping data.
 - Export/import in the app is a raw SQLite file copy (with WAL checkpoint).
 - Export via the app before any schema-adjacent work.
+- NEVER uninstall, clear app data, or reinstall the dev app to resolve an
+  install/signature conflict without (a) confirming there is a recent device
+  export/backup and (b) the USER's explicit approval. The dev app on the
+  physical Pixel holds real user data.
+- `adb install -r` failing with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` means the
+  installed app was signed with a different key than the new build — this is
+  not a signal to uninstall. Stop and ask the USER how they want to proceed.
+- If a smoke test depends on data being present, never substitute an empty
+  install; restore from an existing export via Settings → Import Database.
 
 ## Testing approach
 
