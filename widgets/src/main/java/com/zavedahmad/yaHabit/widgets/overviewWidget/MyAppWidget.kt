@@ -3,6 +3,7 @@ package com.zavedahmad.yaHabit.widgets.overviewWidget
 import android.content.Context
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,7 +38,6 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.material3.ColorProviders
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.zavedahmad.yaHabit.database.PreferenceEntity
 import com.zavedahmad.yaHabit.database.entities.DayState
@@ -52,6 +52,7 @@ import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.widgets.R
 import com.zavedahmad.yahabit.common.WidgetUpdater
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
@@ -89,15 +90,17 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                 Scaffold {
                     val habitRepository: HabitRepository = get()
                     val habits = habitRepository.getHabitsFlowSortedByIndex()
-                        .collectAsState(initial = emptyList())
+                        .collectAsState(initial = emptyList()).value
                     val todayCompletions = habitRepository.getTodayCompletionsFlow()
-                        .collectAsState(initial = emptyMap())
+                        .collectAsState(initial = emptyMap()).value
+                    val activeHabits = habits.filter { !it.isArchived }
+
                     Column(verticalAlignment = Alignment.CenterVertically) {
                         TitleBarWidget("Habits")
-                        if (habits.value.isNotEmpty()) {
+                        if (activeHabits.isNotEmpty()) {
                             HabitItemsList(
-                                habits = habits.value,
-                                todayCompletions = todayCompletions.value,
+                                habits = activeHabits,
+                                todayCompletions = todayCompletions,
                                 habitRepository = habitRepository,
                                 isDark = isDark,
                                 isAmoled = isAmoled
@@ -122,57 +125,23 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
 private data class WidgetVisuals(
     val bgColor: ColorProvider,
     val textColor: ColorProvider,
-    val iconKind: WidgetIconKind
+    @DrawableRes val leadingIcon: Int?,
+    val leadingCount: String? = null
 )
 
-private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
+/** The secondary (corrective) action a row exposes next to the main tap target. */
+private data class TrailingAction(
+    @DrawableRes val iconRes: Int,
+    val description: String
+)
 
-private fun resolveWidgetVisuals(state: DayState, scheme: ColorScheme): WidgetVisuals {
-    fun cp(c: Color) = ColorProvider(c)
+private val SkipIcon = R.drawable.outline_keyboard_double_arrow_right_24
+private val UndoIcon = R.drawable.outline_remove_24
 
-    return when (state) {
-        DayState.Absolute ->
-            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), WidgetIconKind.Check)
-        DayState.AbsoluteMore ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.3f)), cp(scheme.primary), WidgetIconKind.Number)
-        DayState.Partial ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), WidgetIconKind.Number)
-        DayState.NegativeCount ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), WidgetIconKind.Number)
-        DayState.NotNeeded ->
-            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.3f)), cp(scheme.primary.copy(alpha = 0.5f)), WidgetIconKind.Check)
-        DayState.Skip ->
-            WidgetVisuals(cp(scheme.tertiaryContainer), cp(scheme.onTertiaryContainer), WidgetIconKind.DoubleArrow)
-        DayState.Note ->
-            WidgetVisuals(cp(scheme.secondaryContainer), cp(scheme.onSecondaryContainer), WidgetIconKind.Close)
-        DayState.Failed ->
-            WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.2f)), cp(Color(0xFFF44336)), WidgetIconKind.Number)
-        DayState.Incomplete ->
-            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), WidgetIconKind.Close)
-        DayState.Error ->
-            WidgetVisuals(cp(scheme.error), cp(scheme.onError), WidgetIconKind.Close)
+/** No-op tap action for settled states. */
+private val NoAction: () -> Unit = {}
 
-        // Disabled variants — muted versions
-        DayState.AbsoluteDisabled ->
-            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), WidgetIconKind.Check)
-        DayState.AbsoluteMoreDisabled ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
-        DayState.PartialDisabled ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
-        DayState.NegativeCountDisabled ->
-            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), WidgetIconKind.Number)
-        DayState.NotNeededDisabled ->
-            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.3f)), WidgetIconKind.Check)
-        DayState.SkipDisabled ->
-            WidgetVisuals(cp(scheme.tertiaryContainer.copy(alpha = 0.4f)), cp(scheme.onTertiaryContainer.copy(alpha = 0.5f)), WidgetIconKind.DoubleArrow)
-        DayState.NoteDisabled ->
-            WidgetVisuals(cp(scheme.secondaryContainer.copy(alpha = 0.3f)), cp(scheme.onSecondaryContainer.copy(alpha = 0.5f)), WidgetIconKind.Close)
-        DayState.FailedDisabled ->
-            WidgetVisuals(cp(Color(0xFFF44336).copy(alpha = 0.1f)), cp(Color(0xFFF44336).copy(alpha = 0.3f)), WidgetIconKind.Number)
-        DayState.IncompleteDisabled ->
-            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), WidgetIconKind.Close)
-    }
-}
+private fun cp(color: Color) = ColorProvider(color)
 
 @Composable
 private fun HabitItemsList(
@@ -183,129 +152,214 @@ private fun HabitItemsList(
     isAmoled: Boolean
 ) {
     val today = LocalDate.now()
-    val activeHabits = habits.filter { !it.isArchived }
 
     // Precompute each habit's accent scheme once, like the app list does, rather than generating a
     // fresh materialkolor scheme for every row on every recomposition.
-    val habitSchemes: Map<Int, ColorScheme> = remember(activeHabits, isDark, isAmoled) {
-        activeHabits.associate { habit -> habit.id to itemScheme(habit.color, isDark, isAmoled) }
+    val habitSchemes: Map<Int, ColorScheme> = remember(habits, isDark, isAmoled) {
+        habits.associate { habit -> habit.id to itemScheme(habit.color, isDark, isAmoled) }
     }
 
     LazyColumn {
-        items(items = activeHabits) { habit ->
-            val habitCompletionEntity = todayCompletions[habit.id]
-            val coroutineScope = rememberCoroutineScope()
-            val state = resolveDayState(habit, habitCompletionEntity, today, today)
-            val scheme = habitSchemes[habit.id] ?: itemScheme(habit.color, isDark, isAmoled)
-            val visuals = resolveWidgetVisuals(state, scheme)
-            val repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0
-
-            val buttonAction: () -> Unit = when (state) {
-                DayState.Error -> {{}}
-                DayState.Skip -> {
-                    {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            habitRepository.applyRepetitionForADate(
-                                date = today,
-                                habitId = habit.id,
-                                newRepetitionValue = 0.0
-                            )
-                            habitRepository.setSkip(
-                                date = today,
-                                habitId = habit.id,
-                                skipValue = false
-                            )
-                        }
-                    }
-                }
-                DayState.NotNeeded -> {{}}
-                DayState.Absolute, DayState.AbsoluteMore -> {
-                    {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            habitRepository.setSkip(
-                                date = today,
-                                habitId = habit.id,
-                                skipValue = true
-                            )
-                        }
-                    }
-                }
-                DayState.Incomplete, DayState.Partial -> {
-                    {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            habitRepository.applyRepetitionForADate(
-                                date = today,
-                                habitId = habit.id,
-                                newRepetitionValue = habit.repetitionPerDay
-                            )
-                        }
-                    }
-                }
-                DayState.NegativeCount, DayState.Failed -> {
-                    {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            habitRepository.incrementRepetitions(
-                                date = today,
-                                habitId = habit.id
-                            )
-                        }
-                    }
-                }
-                else -> {{}}
-            }
-
-            Column {
-                Row(
-                    GlanceModifier.background(visuals.bgColor)
-                        .cornerRadius(WidgetChipRadius)
-                        .padding(vertical = 5.dp, horizontal = 12.dp)
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .clickable { buttonAction() },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    when (visuals.iconKind) {
-                        WidgetIconKind.Check -> {
-                            Image(
-                                modifier = GlanceModifier.size(24.dp),
-                                provider = ImageProvider(R.drawable.baseline_check_24),
-                                contentDescription = state.name,
-                                colorFilter = ColorFilter.tint(visuals.textColor)
-                            )
-                        }
-                        WidgetIconKind.Close -> {
-                            Image(
-                                modifier = GlanceModifier.size(24.dp),
-                                provider = ImageProvider(R.drawable.outline_close_24),
-                                contentDescription = state.name,
-                                colorFilter = ColorFilter.tint(visuals.textColor)
-                            )
-                        }
-                        WidgetIconKind.DoubleArrow -> {
-                            Image(
-                                modifier = GlanceModifier.size(24.dp),
-                                provider = ImageProvider(R.drawable.outline_keyboard_double_arrow_right_24),
-                                contentDescription = state.name,
-                                colorFilter = ColorFilter.tint(visuals.textColor)
-                            )
-                        }
-                        WidgetIconKind.Number -> {
-                            Text(
-                                text = formatNumberToReadable(repetitionsOnThisDay),
-                                style = WidgetType.RowValue.copy(color = visuals.textColor)
-                            )
-                        }
-                    }
-                    Spacer(GlanceModifier.width(10.dp))
-                    Text(
-                        text = habit.name,
-                        maxLines = 1,
-                        style = WidgetType.RowLabel.copy(color = visuals.textColor)
-                    )
-                }
-                Spacer(GlanceModifier.height(5.dp))
-            }
+        items(items = habits) { habit ->
+            HabitChip(
+                habit = habit,
+                completion = todayCompletions[habit.id],
+                scheme = habitSchemes[habit.id] ?: itemScheme(habit.color, isDark, isAmoled),
+                habitRepository = habitRepository,
+                today = today
+            )
         }
+    }
+}
+
+@Composable
+private fun HabitChip(
+    habit: HabitEntity,
+    completion: HabitCompletionEntity?,
+    scheme: ColorScheme,
+    habitRepository: HabitRepository,
+    today: LocalDate
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val state = resolveDayState(habit, completion, today, today)
+    val repetitions = completion?.repetitionsOnThisDay ?: 0.0
+    val (trailing, onTrailingClick) =
+        habitTrailing(state, habit, habitRepository, coroutineScope, today)
+
+    ChipSlot {
+        WidgetChip(
+            label = habit.name,
+            leadingDescription = state.name,
+            visuals = habitVisuals(state, scheme, repetitions),
+            onChipClick = habitTapAction(state, habit, habitRepository, coroutineScope, today),
+            trailing = trailing,
+            onTrailingClick = onTrailingClick
+        )
+    }
+}
+
+private fun habitVisuals(state: DayState, scheme: ColorScheme, count: Double): WidgetVisuals =
+    when (state) {
+        DayState.Absolute ->
+            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), R.drawable.baseline_check_24)
+        DayState.AbsoluteMore ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.3f)), cp(scheme.primary), null, formatNumberToReadable(count))
+        DayState.Partial ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), null, formatNumberToReadable(count))
+        DayState.NegativeCount ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.5f)), cp(scheme.primary), null, formatNumberToReadable(count))
+        DayState.NotNeeded ->
+            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.3f)), cp(scheme.primary.copy(alpha = 0.5f)), R.drawable.baseline_check_24)
+        DayState.Skip ->
+            WidgetVisuals(cp(scheme.tertiaryContainer), cp(scheme.onTertiaryContainer), SkipIcon)
+        DayState.Note ->
+            WidgetVisuals(cp(scheme.secondaryContainer), cp(scheme.onSecondaryContainer), R.drawable.outline_close_24)
+        DayState.Failed ->
+            WidgetVisuals(cp(FailureRed.copy(alpha = 0.2f)), cp(FailureRed), null, formatNumberToReadable(count))
+        DayState.Incomplete ->
+            WidgetVisuals(cp(scheme.primary), cp(scheme.onPrimary), R.drawable.outline_close_24)
+        DayState.Error ->
+            WidgetVisuals(cp(scheme.error), cp(scheme.onError), R.drawable.outline_close_24)
+
+        // Disabled variants — muted versions
+        DayState.AbsoluteDisabled ->
+            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), R.drawable.baseline_check_24)
+        DayState.AbsoluteMoreDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.4f)), null, formatNumberToReadable(count))
+        DayState.PartialDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), null, formatNumberToReadable(count))
+        DayState.NegativeCountDisabled ->
+            WidgetVisuals(cp(scheme.primaryContainer.copy(alpha = 0.2f)), cp(scheme.primary.copy(alpha = 0.4f)), null, formatNumberToReadable(count))
+        DayState.NotNeededDisabled ->
+            WidgetVisuals(cp(scheme.surfaceVariant.copy(alpha = 0.15f)), cp(scheme.primary.copy(alpha = 0.3f)), R.drawable.baseline_check_24)
+        DayState.SkipDisabled ->
+            WidgetVisuals(cp(scheme.tertiaryContainer.copy(alpha = 0.4f)), cp(scheme.onTertiaryContainer.copy(alpha = 0.5f)), SkipIcon)
+        DayState.NoteDisabled ->
+            WidgetVisuals(cp(scheme.secondaryContainer.copy(alpha = 0.3f)), cp(scheme.onSecondaryContainer.copy(alpha = 0.5f)), R.drawable.outline_close_24)
+        DayState.FailedDisabled ->
+            WidgetVisuals(cp(FailureRed.copy(alpha = 0.1f)), cp(FailureRed.copy(alpha = 0.3f)), null, formatNumberToReadable(count))
+        DayState.IncompleteDisabled ->
+            WidgetVisuals(cp(scheme.primary.copy(alpha = 0.3f)), cp(scheme.onPrimary.copy(alpha = 0.5f)), R.drawable.outline_close_24)
+    }
+
+/**
+ * Main tap = move the day forward: complete, count up, or un-skip. States that are already
+ * "settled" (done, or not needed) deliberately do nothing, so a stray tap can't undo work.
+ */
+private fun habitTapAction(
+    state: DayState,
+    habit: HabitEntity,
+    habitRepository: HabitRepository,
+    scope: CoroutineScope,
+    today: LocalDate
+): () -> Unit = when (state) {
+    DayState.Incomplete, DayState.Partial, DayState.IncompleteDisabled, DayState.PartialDisabled -> {
+        { scope.launch(Dispatchers.IO) { habitRepository.applyRepetitionForADate(today, habit.id, habit.repetitionPerDay) } }
+    }
+    DayState.NegativeCount, DayState.NegativeCountDisabled, DayState.Failed, DayState.FailedDisabled -> {
+        { scope.launch(Dispatchers.IO) { habitRepository.incrementRepetitions(today, habit.id) } }
+    }
+    DayState.Skip, DayState.SkipDisabled -> {
+        { scope.launch(Dispatchers.IO) { habitRepository.setSkip(today, habit.id, false) } }
+    }
+    else -> NoAction
+}
+
+/**
+ * Trailing corrective icon: un-skip a skipped day, count back down when the habit is over its
+ * target, otherwise skip the day.
+ */
+private fun habitTrailing(
+    state: DayState,
+    habit: HabitEntity,
+    habitRepository: HabitRepository,
+    scope: CoroutineScope,
+    today: LocalDate
+): Pair<TrailingAction?, () -> Unit> {
+    val action: TrailingAction
+    val click: () -> Unit
+    when (state) {
+        DayState.Skip, DayState.SkipDisabled -> {
+            action = TrailingAction(SkipIcon, "unskip")
+            click = { scope.launch(Dispatchers.IO) { habitRepository.setSkip(today, habit.id, false) } }
+        }
+        DayState.AbsoluteMore, DayState.AbsoluteMoreDisabled,
+        DayState.NegativeCount, DayState.NegativeCountDisabled,
+        DayState.Failed, DayState.FailedDisabled -> {
+            action = TrailingAction(UndoIcon, "decrement")
+            click = { scope.launch(Dispatchers.IO) { habitRepository.decrementRepetitions(today, habit.id) } }
+        }
+        DayState.NotNeeded, DayState.NotNeededDisabled, DayState.Error -> {
+            return null to NoAction
+        }
+        else -> {
+            action = TrailingAction(SkipIcon, "skip")
+            click = { scope.launch(Dispatchers.IO) { habitRepository.setSkip(today, habit.id, true) } }
+        }
+    }
+    return action to click
+}
+
+/**
+ * A widget row: a rounded, state-coloured chip with a leading state icon (or count), the row label
+ * taking the free space, and an optional trailing corrective icon.
+ */
+@Composable
+private fun WidgetChip(
+    label: String,
+    leadingDescription: String,
+    visuals: WidgetVisuals,
+    onChipClick: () -> Unit,
+    trailing: TrailingAction?,
+    onTrailingClick: () -> Unit
+) {
+    Row(
+        GlanceModifier.background(visuals.bgColor)
+            .cornerRadius(WidgetChipRadius)
+            .padding(vertical = 5.dp, horizontal = 12.dp)
+            .fillMaxWidth()
+            .height(40.dp)
+            .clickable { onChipClick() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (visuals.leadingCount != null) {
+            Text(
+                text = visuals.leadingCount,
+                style = WidgetType.RowValue.copy(color = visuals.textColor)
+            )
+        } else if (visuals.leadingIcon != null) {
+            Image(
+                modifier = GlanceModifier.size(24.dp),
+                provider = ImageProvider(visuals.leadingIcon),
+                contentDescription = leadingDescription,
+                colorFilter = ColorFilter.tint(visuals.textColor)
+            )
+        }
+        Spacer(GlanceModifier.width(10.dp))
+        Text(
+            text = label,
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+            style = WidgetType.RowLabel.copy(color = visuals.textColor)
+        )
+        if (trailing != null) {
+            Spacer(GlanceModifier.width(4.dp))
+            Image(
+                modifier = GlanceModifier.size(24.dp).clickable { onTrailingClick() },
+                provider = ImageProvider(trailing.iconRes),
+                contentDescription = trailing.description,
+                colorFilter = ColorFilter.tint(visuals.textColor)
+            )
+        }
+    }
+}
+
+/** Spacing wrapper so all rows share the same vertical rhythm. */
+@Composable
+private fun ChipSlot(content: @Composable () -> Unit) {
+    Column {
+        content()
+        Spacer(GlanceModifier.height(5.dp))
     }
 }
 
@@ -328,3 +382,6 @@ internal fun TitleBarWidget(title: String) {
         )
     }
 }
+
+/** Semantic "over the limit" red, matching the app's failed/over-target day cells. */
+private val FailureRed = Color(0xFFF44336)
