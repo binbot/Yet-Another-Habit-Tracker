@@ -18,6 +18,7 @@ class PreferencesRepository (
     companion object {
         val defaultPreferences = mapOf(
             PreferenceKeys.AmoledTheme.key to PreferenceKeys.AmoledTheme.defaultValue,
+            PreferenceKeys.DynamicColor.key to PreferenceKeys.DynamicColor.defaultValue,
             PreferenceKeys.ThemeMode.key to PreferenceKeys.ThemeMode.defaultValue,
             PreferenceKeys.FirstDayOfWeek.key to PreferenceKeys.FirstDayOfWeek.defaultValue,
             PreferenceKeys.ShowArchive.key to PreferenceKeys.ShowArchive.defaultValue,

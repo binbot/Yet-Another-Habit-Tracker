@@ -3,12 +3,13 @@ package com.zavedahmad.yaHabit.widgets.overviewWidget
 import android.content.Context
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -34,19 +35,20 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.text.FontStyle
-import androidx.glance.text.FontWeight
+import androidx.glance.material3.ColorProviders
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.materialkolor.Contrast
-import com.materialkolor.dynamicColorScheme
-import com.materialkolor.dynamiccolor.ColorSpec
+import com.zavedahmad.yaHabit.database.PreferenceEntity
 import com.zavedahmad.yaHabit.database.entities.DayState
 import com.zavedahmad.yaHabit.database.entities.HabitCompletionEntity
 import com.zavedahmad.yaHabit.database.entities.HabitEntity
 import com.zavedahmad.yaHabit.database.entities.resolveDayState
 import com.zavedahmad.yaHabit.database.repositories.HabitRepository
+import com.zavedahmad.yaHabit.database.repositories.PreferencesRepository
+import com.zavedahmad.yaHabit.database.utils.getAmoledThemeMode
+import com.zavedahmad.yaHabit.database.utils.getDynamicColor
+import com.zavedahmad.yaHabit.database.utils.getTheme
 import com.zavedahmad.yaHabit.widgets.R
 import com.zavedahmad.yahabit.common.WidgetUpdater
 import com.zavedahmad.yahabit.common.formatNumber.formatNumberToReadable
@@ -65,9 +67,25 @@ class HabitWidgetRepository(private val context: Context, val widgetUpdater: Wid
 class MyAppWidget : GlanceAppWidget(), KoinComponent {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val isDark = (context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES
+            // Widget chrome follows the app theme (theme mode, AMOLED, dynamic color) so the
+            // widget and the in-app surfaces agree on colors.
+            val preferencesRepository: PreferencesRepository = get()
+            val preferences: List<PreferenceEntity> =
+                preferencesRepository.preferences.collectAsState(initial = emptyList()).value
 
-            GlanceTheme {
+            val systemIsDark =
+                (context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES
+            val isDark = when (preferences.getTheme()) {
+                "light" -> false
+                "dark" -> true
+                else -> systemIsDark
+            }
+            val isAmoled = preferences.getAmoledThemeMode()
+            val dynamicColor = preferences.getDynamicColor()
+
+            GlanceTheme(
+                ColorProviders(widgetChromeScheme(context, isDark, isAmoled, dynamicColor))
+            ) {
                 Scaffold {
                     val habitRepository: HabitRepository = get()
                     val habits = habitRepository.getHabitsFlowSortedByIndex()
@@ -77,14 +95,19 @@ class MyAppWidget : GlanceAppWidget(), KoinComponent {
                     Column(verticalAlignment = Alignment.CenterVertically) {
                         TitleBarWidget("Habits")
                         if (habits.value.isNotEmpty()) {
-                            HabitItemsList(habits.value, todayCompletions.value, habitRepository, isDark)
+                            HabitItemsList(
+                                habits = habits.value,
+                                todayCompletions = todayCompletions.value,
+                                habitRepository = habitRepository,
+                                isDark = isDark,
+                                isAmoled = isAmoled
+                            )
                         } else {
                             Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    "Nothing Here",
-                                    style = TextStyle(
-                                        fontStyle = FontStyle.Italic,
-                                        color = GlanceTheme.colors.onSurface
+                                    text = "Nothing Here",
+                                    style = WidgetType.Body.copy(
+                                        color = GlanceTheme.colors.onSurfaceVariant
                                     )
                                 )
                             }
@@ -104,17 +127,8 @@ private data class WidgetVisuals(
 
 private enum class WidgetIconKind { Check, Close, DoubleArrow, Number }
 
-@Composable
-private fun resolveWidgetVisuals(state: DayState, habitColor: Color, isDark: Boolean): WidgetVisuals {
+private fun resolveWidgetVisuals(state: DayState, scheme: ColorScheme): WidgetVisuals {
     fun cp(c: Color) = ColorProvider(c)
-
-    val scheme = dynamicColorScheme(
-        primary = habitColor,
-        isDark = isDark,
-        isAmoled = false,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
-        contrastLevel = Contrast.Medium.value
-    )
 
     return when (state) {
         DayState.Absolute ->
@@ -165,16 +179,25 @@ private fun HabitItemsList(
     habits: List<HabitEntity>,
     todayCompletions: Map<Int, HabitCompletionEntity?>,
     habitRepository: HabitRepository,
-    isDark: Boolean
+    isDark: Boolean,
+    isAmoled: Boolean
 ) {
     val today = LocalDate.now()
+    val activeHabits = habits.filter { !it.isArchived }
+
+    // Precompute each habit's accent scheme once, like the app list does, rather than generating a
+    // fresh materialkolor scheme for every row on every recomposition.
+    val habitSchemes: Map<Int, ColorScheme> = remember(activeHabits, isDark, isAmoled) {
+        activeHabits.associate { habit -> habit.id to itemScheme(habit.color, isDark, isAmoled) }
+    }
 
     LazyColumn {
-        items(items = habits.filter { !it.isArchived }) { habit ->
+        items(items = activeHabits) { habit ->
             val habitCompletionEntity = todayCompletions[habit.id]
             val coroutineScope = rememberCoroutineScope()
             val state = resolveDayState(habit, habitCompletionEntity, today, today)
-            val visuals = resolveWidgetVisuals(state, habit.color, isDark)
+            val scheme = habitSchemes[habit.id] ?: itemScheme(habit.color, isDark, isAmoled)
+            val visuals = resolveWidgetVisuals(state, scheme)
             val repetitionsOnThisDay = habitCompletionEntity?.repetitionsOnThisDay ?: 0.0
 
             val buttonAction: () -> Unit = when (state) {
@@ -234,8 +257,8 @@ private fun HabitItemsList(
             Column {
                 Row(
                     GlanceModifier.background(visuals.bgColor)
-                        .cornerRadius(10.dp)
-                        .padding(vertical = 5.dp, horizontal = 10.dp)
+                        .cornerRadius(WidgetChipRadius)
+                        .padding(vertical = 5.dp, horizontal = 12.dp)
                         .fillMaxWidth()
                         .height(40.dp)
                         .clickable { buttonAction() },
@@ -269,7 +292,7 @@ private fun HabitItemsList(
                         WidgetIconKind.Number -> {
                             Text(
                                 text = formatNumberToReadable(repetitionsOnThisDay),
-                                style = TextStyle(color = visuals.textColor, fontSize = 15.sp)
+                                style = WidgetType.RowValue.copy(color = visuals.textColor)
                             )
                         }
                     }
@@ -277,11 +300,7 @@ private fun HabitItemsList(
                     Text(
                         text = habit.name,
                         maxLines = 1,
-                        style = TextStyle(
-                            color = visuals.textColor,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        style = WidgetType.RowLabel.copy(color = visuals.textColor)
                     )
                 }
                 Spacer(GlanceModifier.height(5.dp))
@@ -305,11 +324,7 @@ internal fun TitleBarWidget(title: String) {
         Text(
             title,
             maxLines = 1,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            style = WidgetType.Title.copy(color = GlanceTheme.colors.onSurface)
         )
     }
 }

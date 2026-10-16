@@ -14,6 +14,10 @@ fun List<PreferenceEntity>.getAmoledThemeMode(): Boolean {
     return (find { it.accessKey == "AmoledTheme" }?.value ?: PreferencesRepository.defaultPreferences["AmoledTheme"] ?: "").toBoolean()
 }
 
+fun List<PreferenceEntity>.getDynamicColor(): Boolean {
+    return (find { it.accessKey == "DynamicColor" }?.value ?: PreferencesRepository.defaultPreferences["DynamicColor"] ?: "").toBoolean()
+}
+
 fun List<PreferenceEntity>.getFirstDayOfWeek(): DayOfWeek{
 
     return DayOfWeek.of((find{it.accessKey == "firstDayOfWeek"}?. value ?: PreferencesRepository.defaultPreferences["firstDayOfWeek"] ?: "").toInt())
