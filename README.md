@@ -21,10 +21,10 @@ Fork maintained by [binbot @ Codeberg](https://codeberg.org/binbot/Yet-Another-H
 
 - **Tracking:** measurable habits (`repetitionPerDay` + `measurementUnit` + `isNegative` limit), flexible `Daily / Weekly / Custom` frequency/cycle, `skip` / `partial` / `NotNeeded` states, `yes/no` tap `Incomplete → Completed → Skipped` and measurable `Partial → Absolute → AbsoluteMore → Skipped`.
 - **Visuals:** per-habit colors (shared `HabitColors` palette for habits/routines/notifications), heatmap + full grid dialog, `FrequencyChart`/`PieChart`/`StreakChart` with habit-color theming and legends.
-- **Routines:** stacked habits (`RoutineTable` + `RoutineItem` + `sourceRoutineId`), unified `Habits & Routines` list with sticky `Routines`/`Habits` headers (`TopAppBar` small), `FAB → Habit / Routine`, dropdown tick + skip per step and routine header `Skip all` (`Dropdown` checklist, no timer v1).
+- **Routines:** stacked habits as first-class steps (`RoutineStep` + `RoutineStepCompletion`, independent of the habit list), unified `Habits & Routines` list with sticky `Routines`/`Habits` headers (`TopAppBar` small), `FAB → Habit / Routine`, per-step tick/skip in the expanded card, routine-level `Skip all`, `⋮ → Stats` (per-step and routine completions, streaks, 14-day strips).
 - **Reminders:** per-habit time + global toggle + default (`Settings` `Notifications`), opportunistic (only if still due), quiet hours `22:00–07:00`, `>3` group summary, habit-color notification, `SCHEDULE_EXACT_ALARM` + `POST_NOTIFICATIONS`.
-- **System:** reorderable `ReorderableLazyList` + archiving/filters (`ShowArchive`/`ShowActive`), `Glance` widget (tap to complete/skip), `Light / Dark / System` + `Amoled` + `Dynamic Color` (S+), top bar `Habits & Routines`.
-- **Data:** `Room v6` `AutoMigration 5→6` (habit `reminderEnabled` + `Routine` + `sourceRoutineId`), no `fallbackToDestructiveMigration`, WAL checkpoint raw SQLite export/import.
+- **System:** reorderable `ReorderableLazyList` + archiving/filters (`ShowArchive`/`ShowActive`), `Glance` widget (chip tap completes/counts/un-skips, trailing icon skips/un-skips/undoes), `Light / Dark / System` + `Amoled` + `Dynamic Color` (S+), top bar `Habits & Routines`.
+- **Data:** `Room v7` (`AutoMigration 1→6` + `MIGRATION_6_7` for routine steps), no `fallbackToDestructiveMigration`, WAL checkpoint raw SQLite export/import.
 
 ## Installation
 
@@ -49,13 +49,20 @@ No Obtainium / F-Droid / IzzyOnDroid listing for this fork — install the APK f
 - [x] Routines — stacked habits (`>=0.4.x`)
 - [x] Reminders + quiet hours (`>=0.4.x`)
 - [x] Heatmap legends + habit-color charts
-- [ ] Routine stats page (heatmaps + attribution `routine vs habit`)
+- [x] Material 3 refresh (type/shape tokens, squared buttons, app-matched widget colors)
+- [x] Routine stats page (per-step + routine completions, streaks, 14-day strips)
+- [x] Widget row actions — skip / unskip / undo, non-destructive tap
+- [ ] Routine stats: heatmaps + habit-vs-routine attribution
+- [ ] Dedicated routines widget (one chip per routine)
+- [ ] Single-habit widget with more detail
+- [ ] Widget long-press / richer actions (blocked: Glance 1.1.1 has no `combinedClickable`)
 - [ ] Table form habits view (deferred)
-- [ ] Widget partial / long-press improvements
+- [ ] Health Connect integration (deferred)
+- [ ] Drop the dead `RoutineItem` table + API (v7 → v8 migration)
 
 ## Privacy & Data Safety
 
-No internet; permissions only `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`. Fully offline, no trackers. Export/import is a raw SQLite file copy with `pragma wal_checkpoint(full)`; `Room` throws on version mismatch rather than wiping (`No fallbackToDestructiveMigration`). DB version `6`.
+No internet; permissions only `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`. Fully offline, no trackers. Export/import is a raw SQLite file copy with `pragma wal_checkpoint(full)`; `Room` throws on version mismatch rather than wiping (`No fallbackToDestructiveMigration`). DB version `7`.
 
 ## Build
 
