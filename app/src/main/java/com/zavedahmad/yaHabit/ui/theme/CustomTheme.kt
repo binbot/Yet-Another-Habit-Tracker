@@ -11,14 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.Contrast
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
-
-/**
- * Fallback accent seed for the app chrome when no per-item accent is supplied.
- * (Dark screens seed from a warm yellow, light screens from a warm red — the app's
- * long-standing default palette.)
- */
-private val DarkSeed = Color(0xFFFFD037)
-private val LightSeed = Color(0xFFD32F2F)
+import com.zavedahmad.yahabit.common.AppThemeSeeds
 
 /**
  * Single Material 3 theme for the whole app.
@@ -53,7 +46,7 @@ fun YaHabitTheme(
         }
     } else {
         rememberDynamicColorScheme(
-            primary = primaryColor ?: if (darkTheme) DarkSeed else LightSeed,
+            primary = primaryColor ?: if (darkTheme) AppThemeSeeds.Dark else AppThemeSeeds.Light,
             isDark = darkTheme,
             isAmoled = isAmoled,
             specVersion = ColorSpec.SpecVersion.SPEC_2025,

@@ -17,6 +17,17 @@ sealed class PreferenceKeys {
         }
     }
 
+    object DynamicColor : PreferenceKeys() {
+        override val key = "DynamicColor"
+        override val defaultValue = "false"
+        override val validValues = Values.entries.map { it.value }
+
+        enum class Values(val value: String) {
+            TRUE("true"),
+            FALSE("false")
+        }
+    }
+
     object FirstDayOfWeek: PreferenceKeys() {
         override val key = "firstDayOfWeek"
         override val defaultValue = "1"
